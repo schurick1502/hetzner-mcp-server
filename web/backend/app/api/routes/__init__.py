@@ -1,2 +1,2 @@
 """API Routes."""
-from . import cli
+from . import cli, ai

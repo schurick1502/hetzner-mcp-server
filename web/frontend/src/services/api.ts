@@ -63,4 +63,10 @@ export const cliApi = {
   listTools: () => api.get('/cli/tools'),
 }
 
+// AI
+export const aiApi = {
+  listProviders: () => api.get('/ai/providers'),
+  // Chat verwendet fetch direkt wegen SSE
+}
+
 export default api
