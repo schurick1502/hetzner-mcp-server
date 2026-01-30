@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./web/backend
+      dockerfile: Dockerfile
+    environment:
+      - HCLOUD_TOKEN=${HCLOUD_TOKEN}
+      - CORS_ORIGINS=http://localhost,http://localhost:80
+    networks:
+      - hetzner-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./web/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - hetzner-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  hetzner-network:
+    driver: bridge

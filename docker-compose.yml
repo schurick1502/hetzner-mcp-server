@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./web/backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - HCLOUD_TOKEN=${HCLOUD_TOKEN}
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+    volumes:
+      - ./web/backend/app:/app/app
+      - ./src:/app/src
+    networks:
+      - hetzner-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./web/frontend
+      dockerfile: Dockerfile
+      target: build
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./web/frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    command: npm run dev
+    networks:
+      - hetzner-network
+    depends_on:
+      - backend
+
+networks:
+  hetzner-network:
+    driver: bridge
