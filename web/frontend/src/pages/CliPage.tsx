@@ -125,22 +125,71 @@ export default function CliPage() {
       </div>
 
       <div className="card overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-4">Available Tools</h2>
-        <div className="space-y-2">
-          {tools.map((tool: any) => (
-            <div
-              key={tool.name}
-              className="p-2 hover:bg-gray-50 rounded cursor-pointer text-xs"
-              onClick={() => {
-                if (terminal) {
-                  terminal.write(tool.name)
-                }
-              }}
-            >
-              <div className="font-mono text-sm text-hetzner-red">{tool.name}</div>
-              <div className="text-xs text-gray-600 line-clamp-2">{tool.description}</div>
-            </div>
-          ))}
+        <h2 className="text-lg font-semibold mb-4">
+          Commands ({tools.length})
+        </h2>
+        <div className="mb-4 text-xs text-gray-600 bg-blue-50 p-2 rounded">
+          💡 Tipp: Klicke auf einen Befehl um ihn ins Terminal einzufügen
+        </div>
+        <div className="space-y-3">
+          {tools.map((tool: any) => {
+            const params = tool.parameters || []
+            const requiredParams = params.filter((p: any) => p.required)
+            const optionalParams = params.filter((p: any) => !p.required)
+
+            return (
+              <div
+                key={tool.name}
+                className="p-3 hover:bg-gray-50 rounded border border-gray-200 cursor-pointer"
+                onClick={() => {
+                  if (terminal) {
+                    terminal.write(tool.name)
+                  }
+                }}
+              >
+                <div className="font-mono text-sm text-hetzner-red font-bold mb-1">
+                  {tool.name}
+                </div>
+                <div className="text-xs text-gray-600 mb-2">
+                  {tool.description || 'Keine Beschreibung'}
+                </div>
+
+                {params.length > 0 && (
+                  <div className="text-xs space-y-1 mt-2 pt-2 border-t border-gray-100">
+                    <div className="font-semibold text-gray-700">Parameter:</div>
+                    {requiredParams.length > 0 && (
+                      <div className="ml-2">
+                        {requiredParams.map((p: any, idx: number) => (
+                          <div key={idx} className="flex gap-1 items-baseline">
+                            <span className="text-red-600">●</span>
+                            <span className="font-mono text-hetzner-red">{p.name}</span>
+                            <span className="text-gray-400">({p.type})</span>
+                            {p.default && (
+                              <span className="text-gray-500 text-xs">= {p.default}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {optionalParams.length > 0 && (
+                      <div className="ml-2">
+                        {optionalParams.map((p: any, idx: number) => (
+                          <div key={idx} className="flex gap-1 items-baseline">
+                            <span className="text-gray-400">○</span>
+                            <span className="font-mono text-gray-600">{p.name}</span>
+                            <span className="text-gray-400">({p.type})</span>
+                            {p.default && (
+                              <span className="text-gray-500 text-xs">= {p.default}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
