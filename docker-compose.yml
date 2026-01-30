@@ -4,7 +4,7 @@ services:
       context: ./web/backend
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - HCLOUD_TOKEN=${HCLOUD_TOKEN}
       - CORS_ORIGINS=http://localhost:5173,http://localhost:3000
@@ -26,7 +26,7 @@ services:
       - ./web/frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://localhost:8001
     command: npm run dev
     networks:
       - hetzner-network
