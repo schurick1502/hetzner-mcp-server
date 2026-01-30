@@ -50,4 +50,10 @@ export const miscApi = {
   locations: () => api.get('/locations'),
 }
 
+// Metrics
+export const metricsApi = {
+  getServerMetrics: (id: string, type: string, start: string, end: string) =>
+    api.get(`/servers/${id}/metrics`, { params: { type, start, end } }),
+}
+
 export default api

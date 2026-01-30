@@ -22,6 +22,7 @@ from src.hetzner_mcp.tools.servers import (
     hcloud_server_disable_rescue,
     hcloud_server_create_image,
     hcloud_server_update,
+    hcloud_server_get_metrics,
 )
 
 router = APIRouter()
@@ -151,4 +152,28 @@ async def create_snapshot(identifier: str, description: Optional[str] = None):
     result = await hcloud_server_create_image(identifier, description)
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error"))
+    return result
+
+
+@router.get("/{identifier}/metrics")
+async def get_server_metrics(
+    identifier: str,
+    type: str = "cpu,disk,network",
+    start: Optional[str] = None,
+    end: Optional[str] = None
+):
+    """Server-Metriken abrufen (CPU, Disk, Network)."""
+    from datetime import datetime, timedelta
+
+    # Defaults: letzte Stunde
+    if not end:
+        end = datetime.now().isoformat()
+    if not start:
+        start = (datetime.now() - timedelta(hours=1)).isoformat()
+
+    result = await hcloud_server_get_metrics(identifier, type, start, end)
+
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error"))
+
     return result
