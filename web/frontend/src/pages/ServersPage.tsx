@@ -4,7 +4,6 @@ import { Server, Play, Square, RotateCw, Trash2, Plus } from 'lucide-react'
 import { serversApi } from '../services/api'
 
 export default function ServersPage() {
-  const [showCreateModal, setShowCreateModal] = useState(false)
   const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -38,7 +37,7 @@ export default function ServersPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Servers</h1>
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => alert('Server-Erstellung kommt bald!')}
           className="btn btn-primary flex items-center gap-2"
         >
           <Plus size={20} />
