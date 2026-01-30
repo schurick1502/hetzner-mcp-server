@@ -19,8 +19,9 @@ export default function CliPage() {
   const executeMutation = useMutation({
     mutationFn: ({ command, args }: { command: string; args: any }) =>
       cliApi.execute(command, args),
-    onSuccess: (data) => {
+    onSuccess: (response) => {
       if (terminal) {
+        const data = response.data
         terminal.writeln('')
         if (data.success) {
           terminal.writeln('\x1b[32m✓ Success\x1b[0m')
@@ -70,7 +71,7 @@ export default function CliPage() {
             term.write('$ ')
           } else {
             addToHistory(currentLine)
-            const [command, ...args] = currentLine.split(' ')
+            const command = currentLine.split(' ')[0]
             executeMutation.mutate({ command, args: {} })
           }
         } else {

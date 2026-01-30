@@ -27,7 +27,7 @@ export default function MetricsChart({ data, title, color, unit }: MetricsChartP
           <YAxis label={{ value: unit, angle: -90, position: 'insideLeft' }} />
           <Tooltip
             labelFormatter={(ts) => format(new Date(ts), 'HH:mm:ss')}
-            formatter={(value: number) => [value.toFixed(2), unit]}
+            formatter={(value) => [typeof value === 'number' ? value.toFixed(2) : '0.00', unit]}
           />
           <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
         </LineChart>
