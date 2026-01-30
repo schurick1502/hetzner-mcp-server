@@ -1,11 +1,12 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
-import { Server, Shield, HardDrive, Network, Menu, LineChart } from 'lucide-react'
+import { Server, Shield, HardDrive, Network, Menu, LineChart, Terminal } from 'lucide-react'
 import ServersPage from './pages/ServersPage'
 import FirewallsPage from './pages/FirewallsPage'
 import VolumesPage from './pages/VolumesPage'
 import NetworksPage from './pages/NetworksPage'
 import DashboardPage from './pages/DashboardPage'
 import MonitoringPage from './pages/MonitoringPage'
+import CliPage from './pages/CliPage'
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <NavLink to="/volumes" icon={<HardDrive size={20} />} label="Volumes" />
             <NavLink to="/networks" icon={<Network size={20} />} label="Networks" />
             <NavLink to="/monitoring" icon={<LineChart size={20} />} label="Monitoring" />
+            <NavLink to="/cli" icon={<Terminal size={20} />} label="CLI" />
           </nav>
         </aside>
 
@@ -37,6 +39,7 @@ function App() {
             <Route path="/volumes" element={<VolumesPage />} />
             <Route path="/networks" element={<NetworksPage />} />
             <Route path="/monitoring" element={<MonitoringPage />} />
+            <Route path="/cli" element={<CliPage />} />
           </Routes>
         </main>
       </div>

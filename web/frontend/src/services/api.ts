@@ -56,4 +56,11 @@ export const metricsApi = {
     api.get(`/servers/${id}/metrics`, { params: { type, start, end } }),
 }
 
+// CLI
+export const cliApi = {
+  execute: (command: string, args: Record<string, any>) =>
+    api.post('/cli/execute', { command, args }),
+  listTools: () => api.get('/cli/tools'),
+}
+
 export default api
