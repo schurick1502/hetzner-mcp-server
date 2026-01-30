@@ -435,3 +435,683 @@ async def hcloud_server_rebuild(
             "success": False,
             "error": f"Fehler beim Rebuilden des Servers: {str(e)}"
         }
+
+
+async def hcloud_server_enable_backup(identifier: str) -> dict:
+    """
+    Aktiviert automatische Backups für einen Server.
+
+    Args:
+        identifier: Server-ID oder Name
+
+    Returns:
+        Status der Aktivierung
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        action = client.servers.enable_backup(server)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Backups für Server '{server.name}' aktiviert",
+            "server_id": server.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Aktivieren der Backups: {str(e)}"
+        }
+
+
+async def hcloud_server_disable_backup(identifier: str) -> dict:
+    """
+    Deaktiviert automatische Backups für einen Server.
+
+    Args:
+        identifier: Server-ID oder Name
+
+    Returns:
+        Status der Deaktivierung
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        action = client.servers.disable_backup(server)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Backups für Server '{server.name}' deaktiviert",
+            "server_id": server.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Deaktivieren der Backups: {str(e)}"
+        }
+
+
+async def hcloud_server_enable_rescue(identifier: str, rescue_type: str = "linux64", ssh_keys: Optional[list[str]] = None) -> dict:
+    """
+    Aktiviert Rescue-Modus für einen Server.
+
+    Args:
+        identifier: Server-ID oder Name
+        rescue_type: Rescue-System-Typ (linux64, linux32, freebsd64)
+        ssh_keys: Liste von SSH-Key Namen oder IDs (optional)
+
+    Returns:
+        Root-Passwort für Rescue-System
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        # SSH-Keys verarbeiten
+        ssh_key_objects = []
+        if ssh_keys:
+            for key_identifier in ssh_keys:
+                try:
+                    key_id = int(key_identifier)
+                    key = client.ssh_keys.get_by_id(key_id)
+                except ValueError:
+                    key = client.ssh_keys.get_by_name(key_identifier)
+
+                if key:
+                    ssh_key_objects.append(key)
+
+        result = client.servers.enable_rescue(
+            server,
+            type=rescue_type,
+            ssh_keys=ssh_key_objects if ssh_key_objects else None
+        )
+        result.action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Rescue-Modus für Server '{server.name}' aktiviert. Server muss neu gestartet werden!",
+            "root_password": result.root_password,
+            "server_id": server.id,
+            "warning": "Root-Passwort nur einmal angezeigt - bitte sicher speichern!"
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Aktivieren des Rescue-Modus: {str(e)}"
+        }
+
+
+async def hcloud_server_disable_rescue(identifier: str) -> dict:
+    """
+    Deaktiviert Rescue-Modus für einen Server.
+
+    Args:
+        identifier: Server-ID oder Name
+
+    Returns:
+        Status der Deaktivierung
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        action = client.servers.disable_rescue(server)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Rescue-Modus für Server '{server.name}' deaktiviert",
+            "server_id": server.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Deaktivieren des Rescue-Modus: {str(e)}"
+        }
+
+
+async def hcloud_server_create_image(
+    identifier: str,
+    description: Optional[str] = None,
+    image_type: str = "snapshot",
+    labels: Optional[dict] = None
+) -> dict:
+    """
+    Erstellt ein Image (Snapshot/Backup) von einem Server.
+
+    Args:
+        identifier: Server-ID oder Name
+        description: Beschreibung des Images (optional)
+        image_type: "snapshot" oder "backup"
+        labels: Labels für das Image (optional)
+
+    Returns:
+        Details des erstellten Images
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        result = client.servers.create_image(
+            server,
+            description=description,
+            type=image_type,
+            labels=labels
+        )
+        result.action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Image von Server '{server.name}' erstellt",
+            "image": {
+                "id": result.image.id,
+                "description": result.image.description,
+                "type": result.image.type,
+                "disk_size": result.image.disk_size,
+            },
+            "server_id": server.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Erstellen des Images: {str(e)}"
+        }
+
+
+async def hcloud_server_attach_iso(identifier: str, iso: str) -> dict:
+    """
+    Hängt ein ISO-Image an einen Server an.
+
+    Args:
+        identifier: Server-ID oder Name
+        iso: ISO-Name oder ID
+
+    Returns:
+        Status der Aktion
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        # ISO finden
+        try:
+            iso_id = int(iso)
+            iso_obj = client.isos.get_by_id(iso_id)
+        except ValueError:
+            iso_obj = client.isos.get_by_name(iso)
+
+        if not iso_obj:
+            return {
+                "success": False,
+                "error": f"ISO '{iso}' nicht gefunden"
+            }
+
+        action = client.servers.attach_iso(server, iso_obj)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"ISO '{iso_obj.name}' an Server '{server.name}' angehängt",
+            "server_id": server.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Anhängen des ISO: {str(e)}"
+        }
+
+
+async def hcloud_server_detach_iso(identifier: str) -> dict:
+    """
+    Trennt das angehängte ISO-Image von einem Server.
+
+    Args:
+        identifier: Server-ID oder Name
+
+    Returns:
+        Status der Aktion
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        action = client.servers.detach_iso(server)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"ISO von Server '{server.name}' getrennt",
+            "server_id": server.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Trennen des ISO: {str(e)}"
+        }
+
+
+async def hcloud_server_change_type(
+    identifier: str,
+    server_type: str,
+    upgrade_disk: bool = False
+) -> dict:
+    """
+    Ändert den Server-Typ (Resize).
+
+    Args:
+        identifier: Server-ID oder Name
+        server_type: Neuer Server-Typ
+        upgrade_disk: Disk auch upgraden (nur bei größeren Typen)
+
+    Returns:
+        Status der Änderung
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        # Server-Typ abrufen
+        srv_type = client.server_types.get_by_name(server_type)
+        if not srv_type:
+            return {
+                "success": False,
+                "error": f"Server-Typ '{server_type}' nicht gefunden"
+            }
+
+        action = client.servers.change_type(server, srv_type, upgrade_disk=upgrade_disk)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Server '{server.name}' auf Typ '{server_type}' geändert",
+            "server_id": server.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Ändern des Server-Typs: {str(e)}"
+        }
+
+
+async def hcloud_server_request_console(identifier: str) -> dict:
+    """
+    Fordert eine WebConsole (VNC) für einen Server an.
+
+    Args:
+        identifier: Server-ID oder Name
+
+    Returns:
+        WebConsole-URL und Passwort
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        result = client.servers.request_console(server)
+        result.action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"WebConsole für Server '{server.name}' angefordert",
+            "wss_url": result.wss_url,
+            "password": result.password,
+            "server_id": server.id,
+            "warning": "Passwort nur einmal angezeigt!"
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Anfordern der WebConsole: {str(e)}"
+        }
+
+
+async def hcloud_server_reset_password(identifier: str) -> dict:
+    """
+    Setzt das Root-Passwort eines Servers zurück.
+
+    Args:
+        identifier: Server-ID oder Name
+
+    Returns:
+        Neues Root-Passwort
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        result = client.servers.reset_password(server)
+        result.action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Root-Passwort für Server '{server.name}' zurückgesetzt",
+            "root_password": result.root_password,
+            "server_id": server.id,
+            "warning": "Root-Passwort nur einmal angezeigt - bitte sicher speichern!"
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Zurücksetzen des Passworts: {str(e)}"
+        }
+
+
+async def hcloud_server_change_dns_ptr(
+    identifier: str,
+    ip: str,
+    dns_ptr: Optional[str]
+) -> dict:
+    """
+    Ändert den Reverse DNS Eintrag für eine Server-IP.
+
+    Args:
+        identifier: Server-ID oder Name
+        ip: IP-Adresse (IPv4 oder IPv6)
+        dns_ptr: DNS-Pointer (Hostname), None zum Zurücksetzen
+
+    Returns:
+        Status der Änderung
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        action = client.servers.change_dns_ptr(server, ip, dns_ptr)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Reverse DNS für IP {ip} auf '{dns_ptr}' gesetzt",
+            "server_id": server.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Ändern des Reverse DNS: {str(e)}"
+        }
+
+
+async def hcloud_server_change_protection(
+    identifier: str,
+    delete: Optional[bool] = None,
+    rebuild: Optional[bool] = None
+) -> dict:
+    """
+    Ändert den Schutz-Status eines Servers.
+
+    Args:
+        identifier: Server-ID oder Name
+        delete: Schutz vor Löschen aktivieren/deaktivieren
+        rebuild: Schutz vor Rebuild aktivieren/deaktivieren
+
+    Returns:
+        Status der Änderung
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        action = client.servers.change_protection(server, delete=delete, rebuild=rebuild)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Schutz-Einstellungen für Server '{server.name}' geändert",
+            "server_id": server.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Ändern der Schutz-Einstellungen: {str(e)}"
+        }
+
+
+async def hcloud_server_update(
+    identifier: str,
+    name: Optional[str] = None,
+    labels: Optional[dict] = None
+) -> dict:
+    """
+    Aktualisiert Server-Metadaten (Name, Labels).
+
+    Args:
+        identifier: Server-ID oder Name
+        name: Neuer Name (optional)
+        labels: Neue Labels (optional)
+
+    Returns:
+        Aktualisierte Server-Details
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        server = client.servers.update(server, name=name, labels=labels)
+
+        return {
+            "success": True,
+            "message": f"Server aktualisiert",
+            "server": {
+                "id": server.id,
+                "name": server.name,
+                "labels": server.labels
+            }
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Aktualisieren des Servers: {str(e)}"
+        }
+
+
+async def hcloud_server_get_metrics(
+    identifier: str,
+    metric_type: str,
+    start: str,
+    end: str
+) -> dict:
+    """
+    Ruft Metriken für einen Server ab.
+
+    Args:
+        identifier: Server-ID oder Name
+        metric_type: cpu, disk, network (kombiniert mit comma)
+        start: Start-Zeitpunkt (ISO 8601)
+        end: End-Zeitpunkt (ISO 8601)
+
+    Returns:
+        Metrik-Daten
+    """
+    try:
+        client = get_client()
+
+        try:
+            server_id = int(identifier)
+            server = client.servers.get_by_id(server_id)
+        except ValueError:
+            server = client.servers.get_by_name(identifier)
+
+        if not server:
+            return {
+                "success": False,
+                "error": f"Server '{identifier}' nicht gefunden"
+            }
+
+        metrics = client.servers.get_metrics(server, type=metric_type, start=start, end=end)
+
+        return {
+            "success": True,
+            "server_id": server.id,
+            "metrics": {
+                "time_series": {
+                    key: [{"timestamp": ts, "value": val} for ts, val in values]
+                    for key, values in metrics.time_series.items()
+                }
+            }
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Abrufen der Metriken: {str(e)}"
+        }

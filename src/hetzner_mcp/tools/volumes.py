@@ -331,3 +331,98 @@ async def hcloud_volume_resize(volume: str, size: int) -> dict:
             "success": False,
             "error": f"Fehler beim Ändern der Volume-Größe: {str(e)}"
         }
+
+
+async def hcloud_volume_change_protection(
+    identifier: str,
+    delete: Optional[bool] = None
+) -> dict:
+    """
+    Ändert den Schutz-Status eines Volumes.
+
+    Args:
+        identifier: Volume-ID oder Name
+        delete: Schutz vor Löschen aktivieren/deaktivieren
+
+    Returns:
+        Status der Änderung
+    """
+    try:
+        client = get_client()
+
+        try:
+            vol_id = int(identifier)
+            volume = client.volumes.get_by_id(vol_id)
+        except ValueError:
+            volume = client.volumes.get_by_name(identifier)
+
+        if not volume:
+            return {
+                "success": False,
+                "error": f"Volume '{identifier}' nicht gefunden"
+            }
+
+        action = client.volumes.change_protection(volume, delete=delete)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Schutz-Einstellungen für Volume '{volume.name}' geändert",
+            "volume_id": volume.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Ändern der Schutz-Einstellungen: {str(e)}"
+        }
+
+
+async def hcloud_volume_update(
+    identifier: str,
+    name: Optional[str] = None,
+    labels: Optional[dict] = None
+) -> dict:
+    """
+    Aktualisiert Volume-Metadaten (Name, Labels).
+
+    Args:
+        identifier: Volume-ID oder Name
+        name: Neuer Name (optional)
+        labels: Neue Labels (optional)
+
+    Returns:
+        Aktualisierte Volume-Details
+    """
+    try:
+        client = get_client()
+
+        try:
+            vol_id = int(identifier)
+            volume = client.volumes.get_by_id(vol_id)
+        except ValueError:
+            volume = client.volumes.get_by_name(identifier)
+
+        if not volume:
+            return {
+                "success": False,
+                "error": f"Volume '{identifier}' nicht gefunden"
+            }
+
+        volume = client.volumes.update(volume, name=name, labels=labels)
+
+        return {
+            "success": True,
+            "message": "Volume aktualisiert",
+            "volume": {
+                "id": volume.id,
+                "name": volume.name,
+                "labels": volume.labels
+            }
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Aktualisieren des Volumes: {str(e)}"
+        }

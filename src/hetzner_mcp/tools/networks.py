@@ -342,3 +342,305 @@ async def hcloud_server_detach_network(server: str, network: str) -> dict:
             "success": False,
             "error": f"Fehler beim Trennen des Servers vom Netzwerk: {str(e)}"
         }
+
+
+async def hcloud_network_add_route(
+    identifier: str,
+    destination: str,
+    gateway: str
+) -> dict:
+    """
+    Fügt eine Route zu einem Netzwerk hinzu.
+
+    Args:
+        identifier: Netzwerk-ID oder Name
+        destination: Ziel-IP-Bereich (CIDR)
+        gateway: Gateway-IP
+
+    Returns:
+        Status der Aktion
+    """
+    try:
+        client = get_client()
+
+        try:
+            net_id = int(identifier)
+            network = client.networks.get_by_id(net_id)
+        except ValueError:
+            network = client.networks.get_by_name(identifier)
+
+        if not network:
+            return {
+                "success": False,
+                "error": f"Netzwerk '{identifier}' nicht gefunden"
+            }
+
+        from hcloud.networks.domain import NetworkRoute
+        route = NetworkRoute(destination=destination, gateway=gateway)
+
+        action = client.networks.add_route(network, route)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Route zu Netzwerk '{network.name}' hinzugefügt",
+            "network_id": network.id,
+            "route": {
+                "destination": destination,
+                "gateway": gateway
+            }
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Hinzufügen der Route: {str(e)}"
+        }
+
+
+async def hcloud_network_delete_route(
+    identifier: str,
+    destination: str,
+    gateway: str
+) -> dict:
+    """
+    Entfernt eine Route von einem Netzwerk.
+
+    Args:
+        identifier: Netzwerk-ID oder Name
+        destination: Ziel-IP-Bereich (CIDR)
+        gateway: Gateway-IP
+
+    Returns:
+        Status der Aktion
+    """
+    try:
+        client = get_client()
+
+        try:
+            net_id = int(identifier)
+            network = client.networks.get_by_id(net_id)
+        except ValueError:
+            network = client.networks.get_by_name(identifier)
+
+        if not network:
+            return {
+                "success": False,
+                "error": f"Netzwerk '{identifier}' nicht gefunden"
+            }
+
+        from hcloud.networks.domain import NetworkRoute
+        route = NetworkRoute(destination=destination, gateway=gateway)
+
+        action = client.networks.delete_route(network, route)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Route von Netzwerk '{network.name}' entfernt",
+            "network_id": network.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Entfernen der Route: {str(e)}"
+        }
+
+
+async def hcloud_network_delete_subnet(
+    identifier: str,
+    ip_range: str
+) -> dict:
+    """
+    Entfernt ein Subnet von einem Netzwerk.
+
+    Args:
+        identifier: Netzwerk-ID oder Name
+        ip_range: IP-Bereich des zu entfernenden Subnets
+
+    Returns:
+        Status der Aktion
+    """
+    try:
+        client = get_client()
+
+        try:
+            net_id = int(identifier)
+            network = client.networks.get_by_id(net_id)
+        except ValueError:
+            network = client.networks.get_by_name(identifier)
+
+        if not network:
+            return {
+                "success": False,
+                "error": f"Netzwerk '{identifier}' nicht gefunden"
+            }
+
+        # Subnet finden
+        subnet = None
+        for sub in network.subnets:
+            if sub.ip_range == ip_range:
+                subnet = sub
+                break
+
+        if not subnet:
+            return {
+                "success": False,
+                "error": f"Subnet '{ip_range}' nicht gefunden"
+            }
+
+        action = client.networks.delete_subnet(network, subnet)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Subnet {ip_range} von Netzwerk '{network.name}' entfernt",
+            "network_id": network.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Entfernen des Subnets: {str(e)}"
+        }
+
+
+async def hcloud_network_change_ip_range(
+    identifier: str,
+    ip_range: str
+) -> dict:
+    """
+    Ändert den IP-Bereich eines Netzwerks.
+
+    Args:
+        identifier: Netzwerk-ID oder Name
+        ip_range: Neuer IP-Bereich (CIDR)
+
+    Returns:
+        Status der Änderung
+    """
+    try:
+        client = get_client()
+
+        try:
+            net_id = int(identifier)
+            network = client.networks.get_by_id(net_id)
+        except ValueError:
+            network = client.networks.get_by_name(identifier)
+
+        if not network:
+            return {
+                "success": False,
+                "error": f"Netzwerk '{identifier}' nicht gefunden"
+            }
+
+        action = client.networks.change_ip_range(network, ip_range)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"IP-Bereich für Netzwerk '{network.name}' auf {ip_range} geändert",
+            "network_id": network.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Ändern des IP-Bereichs: {str(e)}"
+        }
+
+
+async def hcloud_network_change_protection(
+    identifier: str,
+    delete: Optional[bool] = None
+) -> dict:
+    """
+    Ändert den Schutz-Status eines Netzwerks.
+
+    Args:
+        identifier: Netzwerk-ID oder Name
+        delete: Schutz vor Löschen aktivieren/deaktivieren
+
+    Returns:
+        Status der Änderung
+    """
+    try:
+        client = get_client()
+
+        try:
+            net_id = int(identifier)
+            network = client.networks.get_by_id(net_id)
+        except ValueError:
+            network = client.networks.get_by_name(identifier)
+
+        if not network:
+            return {
+                "success": False,
+                "error": f"Netzwerk '{identifier}' nicht gefunden"
+            }
+
+        action = client.networks.change_protection(network, delete=delete)
+        action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Schutz-Einstellungen für Netzwerk '{network.name}' geändert",
+            "network_id": network.id
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Ändern der Schutz-Einstellungen: {str(e)}"
+        }
+
+
+async def hcloud_network_update(
+    identifier: str,
+    name: Optional[str] = None,
+    labels: Optional[dict] = None
+) -> dict:
+    """
+    Aktualisiert Netzwerk-Metadaten.
+
+    Args:
+        identifier: Netzwerk-ID oder Name
+        name: Neuer Name (optional)
+        labels: Neue Labels (optional)
+
+    Returns:
+        Aktualisierte Details
+    """
+    try:
+        client = get_client()
+
+        try:
+            net_id = int(identifier)
+            network = client.networks.get_by_id(net_id)
+        except ValueError:
+            network = client.networks.get_by_name(identifier)
+
+        if not network:
+            return {
+                "success": False,
+                "error": f"Netzwerk '{identifier}' nicht gefunden"
+            }
+
+        network = client.networks.update(network, name=name, labels=labels)
+
+        return {
+            "success": True,
+            "message": "Netzwerk aktualisiert",
+            "network": {
+                "id": network.id,
+                "name": network.name,
+                "labels": network.labels
+            }
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Aktualisieren des Netzwerks: {str(e)}"
+        }

@@ -372,3 +372,116 @@ async def hcloud_firewall_remove_from_server(identifier: str, server: str) -> di
             "success": False,
             "error": f"Fehler beim Entfernen der Firewall: {str(e)}"
         }
+
+
+async def hcloud_firewall_set_rules(identifier: str, rules: list[dict]) -> dict:
+    """
+    Setzt alle Regeln einer Firewall (überschreibt bestehende!).
+
+    Args:
+        identifier: Firewall-ID oder Name
+        rules: Liste von Firewall-Regeln
+
+    Returns:
+        Status und Anzahl der gesetzten Regeln
+    """
+    try:
+        client = get_client()
+
+        try:
+            fw_id = int(identifier)
+            firewall = client.firewalls.get_by_id(fw_id)
+        except ValueError:
+            firewall = client.firewalls.get_by_name(identifier)
+
+        if not firewall:
+            return {
+                "success": False,
+                "error": f"Firewall '{identifier}' nicht gefunden"
+            }
+
+        # Regeln konvertieren
+        rule_objects = []
+        for rule in rules:
+            try:
+                rule_obj = FirewallRule(
+                    direction=rule["direction"],
+                    protocol=rule["protocol"],
+                    source_ips=rule.get("source_ips", []),
+                    destination_ips=rule.get("destination_ips", []),
+                    port=rule.get("port"),
+                )
+                rule_objects.append(rule_obj)
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": f"Ungültige Regel: {str(e)}"
+                }
+
+        # Regeln setzen (überschreibt alle bestehenden!)
+        actions = client.firewalls.set_rules(firewall, rule_objects)
+        for action in actions:
+            action.wait_until_finished()
+
+        return {
+            "success": True,
+            "message": f"Regeln für Firewall '{firewall.name}' gesetzt (alte Regeln überschrieben)",
+            "firewall_id": firewall.id,
+            "rules_count": len(rule_objects)
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Setzen der Regeln: {str(e)}"
+        }
+
+
+async def hcloud_firewall_update(
+    identifier: str,
+    name: Optional[str] = None,
+    labels: Optional[dict] = None
+) -> dict:
+    """
+    Aktualisiert Firewall-Metadaten.
+
+    Args:
+        identifier: Firewall-ID oder Name
+        name: Neuer Name (optional)
+        labels: Neue Labels (optional)
+
+    Returns:
+        Aktualisierte Details
+    """
+    try:
+        client = get_client()
+
+        try:
+            fw_id = int(identifier)
+            firewall = client.firewalls.get_by_id(fw_id)
+        except ValueError:
+            firewall = client.firewalls.get_by_name(identifier)
+
+        if not firewall:
+            return {
+                "success": False,
+                "error": f"Firewall '{identifier}' nicht gefunden"
+            }
+
+        firewall = client.firewalls.update(firewall, name=name, labels=labels)
+
+        return {
+            "success": True,
+            "message": "Firewall aktualisiert",
+            "firewall": {
+                "id": firewall.id,
+                "name": firewall.name,
+                "labels": firewall.labels
+            }
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fehler beim Aktualisieren der Firewall: {str(e)}"
+        }
