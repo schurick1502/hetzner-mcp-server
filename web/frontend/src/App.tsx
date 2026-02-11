@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
-import { Server, Shield, Database, Network, Menu, LineChart, Terminal, Bot } from 'lucide-react'
-import ServersPage from './pages/ServersPage'
+import { Shield, Database, Network, Menu, LineChart, Terminal, Bot } from 'lucide-react'
 import FirewallsPage from './pages/FirewallsPage'
 import StoragePage from './pages/StoragePage'
 import NetworksPage from './pages/NetworksPage'
@@ -22,7 +21,6 @@ function App() {
 
           <nav className="space-y-2">
             <NavLink to="/" icon={<Menu size={20} />} label="Dashboard" />
-            <NavLink to="/servers" icon={<Server size={20} />} label="Servers" />
             <NavLink to="/firewalls" icon={<Shield size={20} />} label="Firewalls" />
             <NavLink to="/storage" icon={<Database size={20} />} label="Storage" />
             <NavLink to="/networks" icon={<Network size={20} />} label="Networks" />
@@ -36,7 +34,6 @@ function App() {
         <main className="flex-1 p-8 overflow-auto">
           <Routes>
             <Route path="/" element={<DashboardPage />} />
-            <Route path="/servers" element={<ServersPage />} />
             <Route path="/firewalls" element={<FirewallsPage />} />
             <Route path="/storage" element={<StoragePage />} />
             <Route path="/networks" element={<NetworksPage />} />
