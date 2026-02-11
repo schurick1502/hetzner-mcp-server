@@ -4,18 +4,26 @@ services:
       context: ./web/backend
       dockerfile: Dockerfile
     ports:
-      - "8001:8000"
+      - "8501:8000"
+    env_file:
+      - .env
     environment:
-      - HCLOUD_TOKEN=${HCLOUD_TOKEN}
-      - CORS_ORIGINS=http://localhost:5173,http://localhost:3000
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - DEFAULT_AI_PROVIDER=${DEFAULT_AI_PROVIDER}
-      - DEFAULT_AI_MODEL=${DEFAULT_AI_MODEL}
+      - HCLOUD_TOKEN
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:3000,http://localhost:8501
+      - ANTHROPIC_API_KEY
+      - OPENAI_API_KEY
+      - GEMINI_API_KEY
+      - DEFAULT_AI_PROVIDER
+      - DEFAULT_AI_MODEL
+      - DOCKER_MONITOR_HOST=${DOCKER_MONITOR_HOST:-46.225.53.7}
+      - DOCKER_MONITOR_USER=${DOCKER_MONITOR_USER:-root}
+      - DOCKER_MONITOR_KEY=/root/.ssh/hetzner_key
+      - DOCKER_MONITOR_PORT=${DOCKER_MONITOR_PORT:-22}
+      - DOCKER_MONITOR_SERVERS
     volumes:
       - ./web/backend/app:/app/app
       - ./src:/app/src
+      - ~/.ssh/hetzner_key:/root/.ssh/hetzner_key:ro
     networks:
       - hetzner-network
     restart: unless-stopped
@@ -31,7 +39,7 @@ services:
       - ./web/frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8001
+      - VITE_API_URL=http://localhost:8501
     command: npm run dev
     networks:
       - hetzner-network
