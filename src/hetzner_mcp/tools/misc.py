@@ -199,8 +199,8 @@ async def hcloud_server_type_list() -> dict:
                 "cpu_type": st.cpu_type,
                 "architecture": st.architecture,
                 "prices": {
-                    "hourly_gross": st.prices[0].price_hourly.gross if st.prices else None,
-                    "monthly_gross": st.prices[0].price_monthly.gross if st.prices else None,
+                    "hourly_gross": st.prices[0]["price_hourly"]["gross"] if st.prices else None,
+                    "monthly_gross": st.prices[0]["price_monthly"]["gross"] if st.prices else None,
                 },
                 "included_traffic": st.included_traffic,
             })

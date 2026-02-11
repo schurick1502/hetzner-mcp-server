@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from .api.routes import servers, firewalls, volumes, networks, load_balancers, misc, cli, ai
+from .api.routes import servers, firewalls, volumes, networks, load_balancers, misc, cli, ai, docker_monitoring
 
 # Load environment
 load_dotenv()
@@ -19,11 +19,11 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
-# CORS middleware
+# CORS middleware - allow all origins for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173").split(","),
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -37,6 +37,7 @@ app.include_router(load_balancers.router, prefix="/api/load-balancers", tags=["L
 app.include_router(misc.router, prefix="/api", tags=["Misc"])
 app.include_router(cli.router, prefix="/api/cli", tags=["CLI"])
 app.include_router(ai.router, prefix="/api/ai", tags=["AI"])
+app.include_router(docker_monitoring.router, prefix="/api/docker", tags=["Docker Monitoring"])
 
 
 @app.get("/")
