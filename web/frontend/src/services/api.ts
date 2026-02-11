@@ -52,6 +52,13 @@ export const miscApi = {
   locations: () => api.get('/locations'),
 }
 
+// Storage (Images by type)
+export const storageApi = {
+  snapshots: () => api.get('/images', { params: { image_type: 'snapshot' } }),
+  backups: () => api.get('/images', { params: { image_type: 'backup' } }),
+  systemImages: () => api.get('/images', { params: { image_type: 'system' } }),
+}
+
 // Metrics
 export const metricsApi = {
   getServerMetrics: (id: string, type: string, start: string, end: string) =>

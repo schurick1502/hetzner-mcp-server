@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
-import { Server, Shield, HardDrive, Network, Menu, LineChart, Terminal, Bot } from 'lucide-react'
+import { Server, Shield, Database, Network, Menu, LineChart, Terminal, Bot } from 'lucide-react'
 import ServersPage from './pages/ServersPage'
 import FirewallsPage from './pages/FirewallsPage'
-import VolumesPage from './pages/VolumesPage'
+import StoragePage from './pages/StoragePage'
 import NetworksPage from './pages/NetworksPage'
 import DashboardPage from './pages/DashboardPage'
 import MonitoringPage from './pages/MonitoringPage'
@@ -24,7 +24,7 @@ function App() {
             <NavLink to="/" icon={<Menu size={20} />} label="Dashboard" />
             <NavLink to="/servers" icon={<Server size={20} />} label="Servers" />
             <NavLink to="/firewalls" icon={<Shield size={20} />} label="Firewalls" />
-            <NavLink to="/volumes" icon={<HardDrive size={20} />} label="Volumes" />
+            <NavLink to="/storage" icon={<Database size={20} />} label="Storage" />
             <NavLink to="/networks" icon={<Network size={20} />} label="Networks" />
             <NavLink to="/monitoring" icon={<LineChart size={20} />} label="Monitoring" />
             <NavLink to="/cli" icon={<Terminal size={20} />} label="CLI" />
@@ -38,7 +38,7 @@ function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/servers" element={<ServersPage />} />
             <Route path="/firewalls" element={<FirewallsPage />} />
-            <Route path="/volumes" element={<VolumesPage />} />
+            <Route path="/storage" element={<StoragePage />} />
             <Route path="/networks" element={<NetworksPage />} />
             <Route path="/monitoring" element={<MonitoringPage />} />
             <Route path="/cli" element={<CliPage />} />
