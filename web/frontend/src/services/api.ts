@@ -96,4 +96,64 @@ export const aiApi = {
   // Chat verwendet fetch direkt wegen SSE
 }
 
+// Security
+export const securityApi = {
+  audit: () => api.get('/security/audit'),
+}
+
+// Costs
+export const costsApi = {
+  getCosts: () => api.get('/costs'),
+}
+
+// Load Balancers
+export const loadBalancersApi = {
+  list: () => api.get('/load-balancers'),
+  create: (data: any) => api.post('/load-balancers', data),
+  delete: (id: string, force: boolean = false) => api.delete(`/load-balancers/${id}?force=${force}`),
+  addService: (id: string, data: any) => api.post(`/load-balancers/${id}/services`, data),
+  deleteService: (id: string, listenPort: number) => api.delete(`/load-balancers/${id}/services/${listenPort}`),
+  addTarget: (id: string, data: any) => api.post(`/load-balancers/${id}/targets`, data),
+  removeTarget: (id: string, data: any) => api.delete(`/load-balancers/${id}/targets`, { data }),
+  changeAlgorithm: (id: string, data: any) => api.put(`/load-balancers/${id}/algorithm`, data),
+}
+
+// Topology
+export const topologyApi = {
+  get: () => api.get('/topology'),
+}
+
+// Bulk Operations
+export const bulkApi = {
+  execute: (action: string, serverNames: string[]) =>
+    api.post('/servers/bulk', { action, server_names: serverNames }),
+}
+
+// Snapshot Scheduler
+export const snapshotSchedulerApi = {
+  list: () => api.get('/snapshots/schedules'),
+  create: (data: any) => api.post('/snapshots/schedules', data),
+  update: (id: string, data: any) => api.put(`/snapshots/schedules/${id}`, data),
+  delete: (id: string) => api.delete(`/snapshots/schedules/${id}`),
+  runNow: (id: string) => api.post(`/snapshots/schedules/${id}/run`),
+}
+
+// Alerting
+export const alertingApi = {
+  getConfig: () => api.get('/alerting/config'),
+  updateConfig: (data: any) => api.put('/alerting/config', data),
+  getStatus: () => api.get('/alerting/status'),
+}
+
+// DNS
+export const dnsApi = {
+  list: () => api.get('/dns'),
+  updatePtr: (data: any) => api.patch('/dns', data),
+}
+
+// Health Checks
+export const healthApi = {
+  check: () => api.get('/health-checks'),
+}
+
 export default api

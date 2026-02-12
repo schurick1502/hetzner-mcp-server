@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
-import { Server, Shield, HardDrive, Network, Key, Camera, Archive, Image, Container, Cpu, MemoryStick, HardDrive as Disk, Activity } from 'lucide-react'
-import { serversApi, firewallsApi, volumesApi, networksApi, miscApi, storageApi, dockerApi } from '../services/api'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Server, Shield, HardDrive, Network, Key, Camera, Archive, Image, Container, Cpu, MemoryStick, HardDrive as Disk, Activity, Play, Square, RotateCw, CheckSquare } from 'lucide-react'
+import { serversApi, firewallsApi, volumesApi, networksApi, miscApi, storageApi, dockerApi, healthApi, bulkApi } from '../services/api'
 
 function UsageBar({ percent, color }: { percent: number; color: string }) {
   return (
@@ -14,6 +15,29 @@ function UsageBar({ percent, color }: { percent: number; color: string }) {
 }
 
 export default function DashboardPage() {
+  const [selectedServers, setSelectedServers] = useState<Set<string>>(new Set())
+  const [bulkResult, setBulkResult] = useState<any>(null)
+  const queryClient = useQueryClient()
+
+  const bulkAction = useMutation({
+    mutationFn: ({ action, names }: { action: string; names: string[] }) => bulkApi.execute(action, names),
+    onSuccess: (res) => {
+      setBulkResult(res.data?.data)
+      queryClient.invalidateQueries({ queryKey: ['servers'] })
+      setSelectedServers(new Set())
+      setTimeout(() => setBulkResult(null), 5000)
+    },
+  })
+
+  const toggleServer = (name: string) => {
+    setSelectedServers(prev => {
+      const next = new Set(prev)
+      if (next.has(name)) next.delete(name)
+      else next.add(name)
+      return next
+    })
+  }
+
   const { data: servers } = useQuery({ queryKey: ['servers'], queryFn: serversApi.list })
   const { data: firewalls } = useQuery({ queryKey: ['firewalls'], queryFn: firewallsApi.list })
   const { data: volumes } = useQuery({ queryKey: ['volumes'], queryFn: volumesApi.list })
@@ -22,6 +46,12 @@ export default function DashboardPage() {
   const { data: snapshots } = useQuery({ queryKey: ['snapshots'], queryFn: storageApi.snapshots })
   const { data: backups } = useQuery({ queryKey: ['backups'], queryFn: storageApi.backups })
   const { data: systemImages } = useQuery({ queryKey: ['systemImages'], queryFn: storageApi.systemImages })
+
+  const { data: healthChecks } = useQuery({
+    queryKey: ['healthChecks'],
+    queryFn: healthApi.check,
+    refetchInterval: 60000,
+  })
 
   const { data: dockerServers } = useQuery({ queryKey: ['dockerServers'], queryFn: dockerApi.servers })
 
@@ -169,32 +199,135 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Server-Liste */}
+      {/* Bulk-Aktions-Toolbar */}
+      {selectedServers.size > 0 && (
+        <div className="card mb-4 !bg-blue-50 border-blue-200 flex items-center justify-between">
+          <span className="text-sm font-medium text-blue-800">
+            <CheckSquare size={16} className="inline mr-1" />
+            {selectedServers.size} Server ausgewählt
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => bulkAction.mutate({ action: 'start', names: [...selectedServers] })}
+              disabled={bulkAction.isPending}
+              className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+            >
+              <Play size={14} /> Starten
+            </button>
+            <button
+              onClick={() => bulkAction.mutate({ action: 'stop', names: [...selectedServers] })}
+              disabled={bulkAction.isPending}
+              className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+            >
+              <Square size={14} /> Stoppen
+            </button>
+            <button
+              onClick={() => bulkAction.mutate({ action: 'reboot', names: [...selectedServers] })}
+              disabled={bulkAction.isPending}
+              className="flex items-center gap-1 px-3 py-1.5 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
+            >
+              <RotateCw size={14} /> Reboot
+            </button>
+            <button
+              onClick={() => bulkAction.mutate({ action: 'snapshot', names: [...selectedServers] })}
+              disabled={bulkAction.isPending}
+              className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            >
+              <Camera size={14} /> Snapshot
+            </button>
+            <button
+              onClick={() => setSelectedServers(new Set())}
+              className="px-3 py-1.5 text-gray-600 text-sm hover:text-gray-800"
+            >
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk-Ergebnis */}
+      {bulkResult && (
+        <div className={`card mb-4 text-sm ${bulkResult.error_count > 0 ? '!bg-yellow-50' : '!bg-green-50'}`}>
+          <p className="font-medium">
+            Bulk {bulkResult.action}: {bulkResult.success_count}/{bulkResult.total} erfolgreich
+          </p>
+          {bulkResult.results?.filter((r: any) => !r.success).map((r: any, i: number) => (
+            <p key={i} className="text-red-600 mt-1">{r.server}: {r.error}</p>
+          ))}
+        </div>
+      )}
+
+      {/* Server-Liste mit Health Checks */}
       <div className="card">
-        <h2 className="text-xl font-bold mb-4">Server</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Server</h2>
+          {(servers?.data?.servers?.length || 0) > 0 && (
+            <button
+              onClick={() => {
+                const allNames = servers?.data?.servers?.map((s: any) => s.name) || []
+                if (selectedServers.size === allNames.length) setSelectedServers(new Set())
+                else setSelectedServers(new Set(allNames))
+              }}
+              className="text-xs text-blue-600 hover:text-blue-800"
+            >
+              {selectedServers.size === (servers?.data?.servers?.length || 0) ? 'Keine auswählen' : 'Alle auswählen'}
+            </button>
+          )}
+        </div>
         <div className="space-y-2">
-          {servers?.data?.servers?.map((server: any) => (
-            <div key={server.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Server className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="font-medium">{server.name}</p>
-                  <p className="text-sm text-gray-600">{server.server_type} - {server.location}</p>
+          {servers?.data?.servers?.map((server: any) => {
+            const health = healthChecks?.data?.data?.checks?.find((c: any) => c.server === server.name)
+            const statusColor = health?.status === 'healthy' ? 'bg-green-400' :
+              health?.status === 'degraded' ? 'bg-yellow-400' :
+              health?.status === 'down' ? 'bg-red-400' : 'bg-gray-300'
+            const statusTitle = health?.status === 'healthy' ? `Erreichbar (${health.response_ms}ms)` :
+              health?.status === 'degraded' ? 'Nur SSH erreichbar' :
+              health?.status === 'down' ? 'Nicht erreichbar' :
+              health?.status === 'off' ? 'Server aus' : 'Prüfe...'
+            const isSelected = selectedServers.has(server.name)
+
+            return (
+              <div
+                key={server.id}
+                className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
+                  isSelected ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100'
+                }`}
+                onClick={() => toggleServer(server.name)}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleServer(server.name)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                  />
+                  <div className="relative">
+                    <Server className="w-5 h-5 text-gray-400" />
+                    <div className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${statusColor} border border-white`} title={statusTitle} />
+                  </div>
+                  <div>
+                    <p className="font-medium">{server.name}</p>
+                    <p className="text-sm text-gray-600">{server.server_type} - {server.location}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  {health?.response_ms > 0 && (
+                    <span className="text-xs text-gray-400">{health.response_ms}ms</span>
+                  )}
+                  <div className="text-right text-sm">
+                    <p className="font-mono text-gray-700">{server.public_ipv4}</p>
+                    <p className="text-xs text-gray-400">{server.public_ipv6?.replace('/64', '')}</p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-sm ${
+                    server.status === 'running' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {server.status}
+                  </span>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right text-sm">
-                  <p className="font-mono text-gray-700">{server.public_ipv4}</p>
-                  <p className="text-xs text-gray-400">{server.public_ipv6?.replace('/64', '')}</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-sm ${
-                  server.status === 'running' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {server.status}
-                </span>
-              </div>
-            </div>
-          )) || <p className="text-gray-500">Keine Server vorhanden</p>}
+            )
+          }) || <p className="text-gray-500">Keine Server vorhanden</p>}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Network, ChevronDown, ChevronRight, Plus, Trash2, Server, Globe } from 'lucide-react'
-import { networksApi } from '../services/api'
+import { Network, ChevronDown, ChevronRight, Plus, Trash2, Server, Globe, Edit3, Check, X } from 'lucide-react'
+import { networksApi, dnsApi } from '../services/api'
 
 function AddSubnetForm({ networkName, onClose }: { networkName: string; onClose: () => void }) {
   const queryClient = useQueryClient()
@@ -156,7 +156,107 @@ function NetworkCard({ network }: { network: any }) {
   )
 }
 
-export default function NetworksPage() {
+function DnsTab() {
+  const queryClient = useQueryClient()
+  const [editingIp, setEditingIp] = useState<string | null>(null)
+  const [editPtr, setEditPtr] = useState('')
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['dns'],
+    queryFn: dnsApi.list,
+  })
+
+  const updatePtr = useMutation({
+    mutationFn: (data: any) => dnsApi.updatePtr(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dns'] })
+      setEditingIp(null)
+    },
+  })
+
+  if (isLoading) return <div className="text-center py-8 text-gray-500">Laden...</div>
+
+  const records = data?.data?.data || []
+
+  return (
+    <div className="card">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-left">
+            <th className="py-2 px-2">IP-Adresse</th>
+            <th className="py-2 px-2">Typ</th>
+            <th className="py-2 px-2">Ressource</th>
+            <th className="py-2 px-2">PTR-Record</th>
+            <th className="py-2 px-2 w-20"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {records.map((rec: any, i: number) => (
+            <tr key={i} className="border-b hover:bg-gray-50">
+              <td className="py-2 px-2 font-mono">{rec.ip}</td>
+              <td className="py-2 px-2">
+                <span className={`px-1.5 py-0.5 rounded text-xs ${rec.type === 'ipv4' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                  {rec.type}
+                </span>
+              </td>
+              <td className="py-2 px-2">
+                <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded mr-1">{rec.resource_type}</span>
+                {rec.resource_name}
+              </td>
+              <td className="py-2 px-2">
+                {editingIp === rec.ip ? (
+                  <input
+                    value={editPtr}
+                    onChange={e => setEditPtr(e.target.value)}
+                    className="border rounded px-2 py-1 text-sm w-full font-mono"
+                    placeholder="hostname.example.com"
+                    autoFocus
+                  />
+                ) : (
+                  <span className="font-mono text-gray-600">{rec.ptr || <span className="text-gray-400 italic">nicht gesetzt</span>}</span>
+                )}
+              </td>
+              <td className="py-2 px-2">
+                {editingIp === rec.ip ? (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => updatePtr.mutate({
+                        ip: rec.ip,
+                        ptr: editPtr,
+                        resource_type: rec.resource_type,
+                        resource_id: rec.resource_name,
+                      })}
+                      disabled={updatePtr.isPending}
+                      className="p-1 hover:bg-green-100 text-green-600 rounded"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button onClick={() => setEditingIp(null)} className="p-1 hover:bg-gray-200 text-gray-500 rounded">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setEditingIp(rec.ip); setEditPtr(rec.ptr || '') }}
+                    className="p-1 hover:bg-blue-100 text-blue-600 rounded"
+                    title="PTR bearbeiten"
+                  >
+                    <Edit3 size={14} />
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {records.length === 0 && (
+        <p className="text-center text-gray-500 py-8">Keine IP-Adressen gefunden</p>
+      )}
+    </div>
+  )
+}
+
+function NetworksTab() {
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [newIpRange, setNewIpRange] = useState('10.0.0.0/16')
@@ -183,8 +283,7 @@ export default function NetworksPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Networks</h1>
+      <div className="flex justify-end mb-4">
         <button onClick={() => setShowCreate(!showCreate)} className="btn btn-primary flex items-center gap-2">
           <Plus size={20} /> Neues Netzwerk
         </button>
@@ -194,23 +293,9 @@ export default function NetworksPage() {
         <div className="card mb-6">
           <h3 className="font-bold mb-3">Neues Netzwerk erstellen</h3>
           <form onSubmit={(e) => { e.preventDefault(); createNet.mutate() }} className="flex gap-3">
-            <input
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              placeholder="Netzwerk-Name"
-              className="flex-1 border rounded px-3 py-2"
-              required
-            />
-            <input
-              value={newIpRange}
-              onChange={e => setNewIpRange(e.target.value)}
-              placeholder="10.0.0.0/16"
-              className="w-48 border rounded px-3 py-2 font-mono"
-              required
-            />
-            <button type="submit" disabled={createNet.isPending} className="btn btn-primary">
-              {createNet.isPending ? 'Erstelle...' : 'Erstellen'}
-            </button>
+            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Netzwerk-Name" className="flex-1 border rounded px-3 py-2" required />
+            <input value={newIpRange} onChange={e => setNewIpRange(e.target.value)} placeholder="10.0.0.0/16" className="w-48 border rounded px-3 py-2 font-mono" required />
+            <button type="submit" disabled={createNet.isPending} className="btn btn-primary">{createNet.isPending ? 'Erstelle...' : 'Erstellen'}</button>
             <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600">Abbrechen</button>
           </form>
           {createNet.isError && <p className="text-red-600 text-sm mt-2">Fehler beim Erstellen</p>}
@@ -225,6 +310,40 @@ export default function NetworksPage() {
           <p className="text-center text-gray-500 py-8">Keine Netzwerke vorhanden</p>
         )}
       </div>
+    </div>
+  )
+}
+
+export default function NetworksPage() {
+  const [activeTab, setActiveTab] = useState<'networks' | 'dns'>('networks')
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Networks</h1>
+      </div>
+
+      <div className="flex gap-2 mb-6 border-b">
+        <button
+          onClick={() => setActiveTab('networks')}
+          className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
+            activeTab === 'networks' ? 'border-hetzner-blue text-hetzner-blue' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Network size={20} /> Netzwerke
+        </button>
+        <button
+          onClick={() => setActiveTab('dns')}
+          className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
+            activeTab === 'dns' ? 'border-hetzner-blue text-hetzner-blue' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Globe size={20} /> DNS / PTR
+        </button>
+      </div>
+
+      {activeTab === 'networks' && <NetworksTab />}
+      {activeTab === 'dns' && <DnsTab />}
     </div>
   )
 }

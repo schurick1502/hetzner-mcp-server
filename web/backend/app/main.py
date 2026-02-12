@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from .api.routes import servers, firewalls, volumes, networks, load_balancers, misc, cli, ai, docker_monitoring, settings
+from .api.routes import servers, firewalls, volumes, networks, load_balancers, misc, cli, ai, docker_monitoring, settings, security_audit, costs, health_checks, topology, bulk, snapshot_scheduler, alerting, dns, ssh_terminal
 
 # Load environment
 load_dotenv()
@@ -39,6 +39,15 @@ app.include_router(cli.router, prefix="/api/cli", tags=["CLI"])
 app.include_router(ai.router, prefix="/api/ai", tags=["AI"])
 app.include_router(docker_monitoring.router, prefix="/api/docker", tags=["Docker Monitoring"])
 app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
+app.include_router(security_audit.router, prefix="/api/security", tags=["Security"])
+app.include_router(costs.router, prefix="/api/costs", tags=["Costs"])
+app.include_router(health_checks.router, prefix="/api/health-checks", tags=["Health Checks"])
+app.include_router(topology.router, prefix="/api/topology", tags=["Topology"])
+app.include_router(bulk.router, prefix="/api/servers/bulk", tags=["Bulk Operations"])
+app.include_router(snapshot_scheduler.router, prefix="/api/snapshots/schedules", tags=["Snapshot Scheduler"])
+app.include_router(alerting.router, prefix="/api/alerting", tags=["Alerting"])
+app.include_router(dns.router, prefix="/api/dns", tags=["DNS"])
+app.include_router(ssh_terminal.router, prefix="/api/ssh", tags=["SSH Terminal"])
 
 
 @app.get("/")

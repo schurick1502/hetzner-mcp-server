@@ -1083,6 +1083,8 @@ async def hcloud_server_get_metrics(
         Metrik-Daten
     """
     try:
+        from datetime import datetime, timezone
+
         client = get_client()
 
         try:
@@ -1097,16 +1099,34 @@ async def hcloud_server_get_metrics(
                 "error": f"Server '{identifier}' nicht gefunden"
             }
 
-        metrics = client.servers.get_metrics(server, type=metric_type, start=start, end=end)
+        # Parse ISO strings to datetime objects for hcloud library
+        def parse_dt(s: str) -> datetime:
+            s = s.replace('Z', '+00:00')
+            try:
+                return datetime.fromisoformat(s)
+            except ValueError:
+                return datetime.now(timezone.utc)
+
+        start_dt = parse_dt(start)
+        end_dt = parse_dt(end)
+
+        response = client.servers.get_metrics(server, type=metric_type, start=start_dt, end=end_dt)
+        metrics_data = response.metrics
+
+        # time_series structure: {metric_name: {"values": [[timestamp, value], ...]}}
+        time_series_result = {}
+        for key, data in metrics_data.time_series.items():
+            raw_values = data.get("values", []) if isinstance(data, dict) else data
+            time_series_result[key] = [
+                {"timestamp": str(point[0]), "value": str(point[1])}
+                for point in raw_values
+            ]
 
         return {
             "success": True,
             "server_id": server.id,
             "metrics": {
-                "time_series": {
-                    key: [{"timestamp": ts, "value": val} for ts, val in values]
-                    for key, values in metrics.time_series.items()
-                }
+                "time_series": time_series_result
             }
         }
 
