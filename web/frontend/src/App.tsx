@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
-import { Shield, Database, Network, Menu, LineChart, Terminal, Bot } from 'lucide-react'
+import { Shield, Database, Network, Menu, LineChart, Terminal, Bot, Settings } from 'lucide-react'
 import FirewallsPage from './pages/FirewallsPage'
 import StoragePage from './pages/StoragePage'
 import NetworksPage from './pages/NetworksPage'
@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage'
 import MonitoringPage from './pages/MonitoringPage'
 import CliPage from './pages/CliPage'
 import AiAssistantPage from './pages/AiAssistantPage'
+import SettingsPage from './pages/SettingsPage'
 
 function App() {
   return (
@@ -27,6 +28,8 @@ function App() {
             <NavLink to="/monitoring" icon={<LineChart size={20} />} label="Monitoring" />
             <NavLink to="/cli" icon={<Terminal size={20} />} label="CLI" />
             <NavLink to="/ai" icon={<Bot size={20} />} label="AI Assistant" />
+            <div className="border-t border-white/20 my-4"></div>
+            <NavLink to="/settings" icon={<Settings size={20} />} label="Einstellungen" />
           </nav>
         </aside>
 
@@ -40,6 +43,7 @@ function App() {
             <Route path="/monitoring" element={<MonitoringPage />} />
             <Route path="/cli" element={<CliPage />} />
             <Route path="/ai" element={<AiAssistantPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </main>
       </div>

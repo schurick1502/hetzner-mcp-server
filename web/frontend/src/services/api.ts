@@ -26,6 +26,7 @@ export const firewallsApi = {
   create: (data: any) => api.post('/firewalls', data),
   delete: (id: string, force: boolean = false) => api.delete(`/firewalls/${id}?force=${force}`),
   addRule: (id: string, rule: any) => api.post(`/firewalls/${id}/rules`, rule),
+  setRules: (id: string, rules: any[]) => api.put(`/firewalls/${id}/rules`, { rules }),
 }
 
 // Volumes
@@ -42,6 +43,16 @@ export const networksApi = {
   list: () => api.get('/networks'),
   create: (data: any) => api.post('/networks', data),
   delete: (id: string, force: boolean = false) => api.delete(`/networks/${id}?force=${force}`),
+  addSubnet: (id: string, data: any) => api.post(`/networks/${id}/subnets`, data),
+  deleteSubnet: (id: string, ip_range: string) => api.delete(`/networks/${id}/subnets`, { data: { ip_range } }),
+  addRoute: (id: string, data: any) => api.post(`/networks/${id}/routes`, data),
+  deleteRoute: (id: string, data: any) => api.delete(`/networks/${id}/routes`, { data }),
+}
+
+// Settings
+export const settingsApi = {
+  get: () => api.get('/settings'),
+  update: (data: any) => api.put('/settings', data),
 }
 
 // Misc
@@ -57,6 +68,13 @@ export const storageApi = {
   snapshots: () => api.get('/images', { params: { image_type: 'snapshot' } }),
   backups: () => api.get('/images', { params: { image_type: 'backup' } }),
   systemImages: () => api.get('/images', { params: { image_type: 'system' } }),
+}
+
+// Docker Monitoring
+export const dockerApi = {
+  servers: () => api.get('/docker/servers'),
+  containers: (server: string) => api.get('/docker/containers', { params: { server } }),
+  systemMetrics: (server: string) => api.get('/docker/system-metrics', { params: { server } }),
 }
 
 // Metrics

@@ -13,6 +13,7 @@ from src.hetzner_mcp.tools.firewalls import (
     hcloud_firewall_create,
     hcloud_firewall_delete,
     hcloud_firewall_add_rule,
+    hcloud_firewall_set_rules,
     hcloud_firewall_apply,
     hcloud_firewall_remove_from_server,
 )
@@ -72,6 +73,19 @@ async def add_rule(identifier: str, request: FirewallRuleRequest):
         request.destination_ips,
         request.port,
     )
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error"))
+    return result
+
+
+class FirewallSetRulesRequest(BaseModel):
+    rules: list[dict]
+
+
+@router.put("/{identifier}/rules")
+async def set_rules(identifier: str, request: FirewallSetRulesRequest):
+    """Alle Regeln einer Firewall setzen (überschreibt bestehende)."""
+    result = await hcloud_firewall_set_rules(identifier, request.rules)
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error"))
     return result

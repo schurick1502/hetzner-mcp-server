@@ -23,6 +23,7 @@ services:
     volumes:
       - ./web/backend/app:/app/app
       - ./src:/app/src
+      - ./.env:/app/.env
       - ~/.ssh/hetzner_key:/root/.ssh/hetzner_key:ro
     networks:
       - hetzner-network

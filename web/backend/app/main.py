@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from .api.routes import servers, firewalls, volumes, networks, load_balancers, misc, cli, ai, docker_monitoring
+from .api.routes import servers, firewalls, volumes, networks, load_balancers, misc, cli, ai, docker_monitoring, settings
 
 # Load environment
 load_dotenv()
@@ -38,6 +38,7 @@ app.include_router(misc.router, prefix="/api", tags=["Misc"])
 app.include_router(cli.router, prefix="/api/cli", tags=["CLI"])
 app.include_router(ai.router, prefix="/api/ai", tags=["AI"])
 app.include_router(docker_monitoring.router, prefix="/api/docker", tags=["Docker Monitoring"])
+app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
 
 
 @app.get("/")

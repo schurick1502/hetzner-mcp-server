@@ -22,6 +22,16 @@ async def hcloud_firewall_list() -> dict:
                 "id": fw.id,
                 "name": fw.name,
                 "rules_count": len(fw.rules),
+                "rules": [
+                    {
+                        "direction": rule.direction,
+                        "protocol": rule.protocol,
+                        "source_ips": rule.source_ips,
+                        "destination_ips": rule.destination_ips,
+                        "port": rule.port,
+                    }
+                    for rule in fw.rules
+                ],
                 "applied_to": [
                     {
                         "type": res.type,
