@@ -1,13 +1,13 @@
 # Hetzner Cloud MCP Server
 
-Ein vollständiger Model Context Protocol (MCP) Server für die Hetzner Cloud API mit **117 Tools** und moderner **Web-UI**.
+Ein vollständiger Model Context Protocol (MCP) Server für die Hetzner Cloud API mit **98 Tools** und moderner **Web-UI**.
 
 🚀 **NEU:** Production-Ready Web-Interface mit FastAPI + React!
 
 ## ✨ Features
 
 ### MCP Server (Claude Integration)
-- **117 MCP-Tools** - Vollständige Hetzner Cloud API Abdeckung
+- **98 MCP-Tools** - Vollständige Hetzner Cloud API Abdeckung
 - **Server-Management**: Erstellen, löschen, starten, stoppen, rebuilden, resize, backups, rescue-mode, snapshots, metrics
 - **Load Balancer**: Erstellen, konfigurieren, services, targets, health-checks
 - **Firewall-Management**: Erstellen, regeln hinzufügen, auf Server anwenden
@@ -32,7 +32,7 @@ Ein vollständiger Model Context Protocol (MCP) Server für die Hetzner Cloud AP
 
 ## 📊 Statistik
 
-- **117 MCP-Tools** (100% Hetzner Cloud API Abdeckung)
+- **98 MCP-Tools** (100% Hetzner Cloud API Abdeckung)
 - **2 Deployment-Optionen**: MCP Server + Web-UI
 - **Production-Ready** mit Docker
 - **Type-Safe** TypeScript & Pydantic
@@ -311,7 +311,7 @@ hetzner_mcp.tools
 ```
 hetzner-mcp-server/
 ├── src/hetzner_mcp/          # MCP Server
-│   ├── server.py              # FastMCP Server (117 Tools)
+│   ├── server.py              # FastMCP Server (98 Tools)
 │   ├── config.py              # Konfiguration
 │   └── tools/                 # Tool-Implementierungen
 │       ├── servers.py
@@ -402,7 +402,7 @@ Siehe [Web-UI README](web/README.md) für Details.
 
 ## 🌟 Highlights
 
-- ✅ **Vollständigste Hetzner Cloud MCP Implementation** (117 Tools!)
+- ✅ **Vollständigste Hetzner Cloud MCP Implementation** (98 Tools!)
 - ✅ **Production-Ready Web-UI** mit FastAPI + React
 - ✅ **Docker-basiert** für einfaches Deployment
 - ✅ **Type-Safe** mit TypeScript & Pydantic
@@ -414,7 +414,7 @@ Siehe [Web-UI README](web/README.md) für Details.
 
 ### Version 2.0 (Aktuell)
 - ➕ Web-UI mit FastAPI + React + Docker
-- ➕ 117 MCP-Tools (von 33 auf 117 erweitert)
+- ➕ 98 MCP-Tools (von 33 auf 98 erweitert)
 - ➕ Load Balancer, Certificates, ISOs, Placement Groups
 - ➕ Vollständige IP-Verwaltung (Floating & Primary)
 - ➕ Server Metrics, Rescue-Mode, Snapshots

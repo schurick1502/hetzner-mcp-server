@@ -1017,7 +1017,7 @@ def main():
 
     if debug:
         print("Hetzner Cloud MCP Server startet im Debug-Modus...")
-        print("Registrierte Tools: 117+")
+        print("Registrierte Tools: 98")
 
     # Server starten
     mcp.run()
