@@ -2,25 +2,28 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
+import sys
 import os
-from hcloud import Client
 from hcloud.servers.domain import Server
 from hcloud.firewalls.domain import Firewall
 from hcloud.volumes.domain import Volume
 from hcloud.networks.domain import Network
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../../..'))
+from src.hetzner_mcp.config import get_client
+
 router = APIRouter()
 
 # Hetzner Client initialisieren
-def get_hcloud_client() -> Client:
+def get_hcloud_client():
     """Hetzner Cloud Client mit API-Token."""
-    token = os.getenv("HCLOUD_TOKEN") or os.getenv("HETZNER_API_TOKEN")
-    if not token:
+    try:
+        return get_client()
+    except ValueError:
         raise HTTPException(
             status_code=500,
-            detail="HCLOUD_TOKEN oder HETZNER_API_TOKEN nicht konfiguriert"
+            detail="Kein gueltiger Hetzner Account konfiguriert"
         )
-    return Client(token=token)
 
 
 class CommandRequest(BaseModel):
@@ -149,6 +152,7 @@ async def server_list() -> dict:
                 },
                 "server_type": s.server_type.name if s.server_type else None,
                 "datacenter": s.datacenter.name if s.datacenter else None,
+                "location": s.location.name if s.location else None,
                 "created": str(s.created) if s.created else None,
             }
             for s in servers
@@ -186,6 +190,7 @@ async def server_info(identifier: str) -> dict:
             "memory": server.server_type.memory,
             "disk": server.server_type.disk,
         } if server.server_type else None,
+        "location": server.location.name if server.location else None,
         "datacenter": {
             "name": server.datacenter.name,
             "location": server.datacenter.location.name if server.datacenter.location else None,
@@ -445,6 +450,7 @@ async def primary_ip_list() -> dict:
                 "ip": p.ip,
                 "type": p.type,
                 "datacenter": p.datacenter.name if p.datacenter else None,
+                "location": p.location.name if p.location else None,
                 "auto_delete": p.auto_delete,
                 "blocked": p.blocked,
             }
