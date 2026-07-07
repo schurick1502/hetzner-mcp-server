@@ -350,6 +350,7 @@ async def hcloud_primary_ip_list() -> dict:
                 "assignee_id": pip.assignee_id,
                 "assignee_type": pip.assignee_type,
                 "datacenter": pip.datacenter.name if pip.datacenter else None,
+                "location": pip.location.name if pip.location else None,
                 "blocked": pip.blocked,
                 "auto_delete": pip.auto_delete,
                 "created": pip.created.isoformat(),

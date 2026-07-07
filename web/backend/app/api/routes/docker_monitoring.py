@@ -19,18 +19,49 @@ SSH_KEY_PATH = os.getenv("DOCKER_MONITOR_KEY", "/root/.ssh/hetzner_key")
 
 def get_servers() -> List[Dict]:
     """Get configured servers from environment."""
-    servers_json = os.getenv("DOCKER_MONITOR_SERVERS", "[]")
+    servers_json = os.getenv("DOCKER_MONITOR_SERVERS", "").strip()
     try:
-        servers = json.loads(servers_json)
-        if not servers:
-            # Fallback to single server config
-            host = os.getenv("DOCKER_MONITOR_HOST", "46.225.53.7")
-            user = os.getenv("DOCKER_MONITOR_USER", "root")
-            port = int(os.getenv("DOCKER_MONITOR_PORT", "22"))
-            servers = [{"name": host, "host": host, "user": user, "port": port}]
-        return servers
+        parsed = json.loads(servers_json) if servers_json else []
+        if isinstance(parsed, list):
+            servers: List[Dict] = []
+            for entry in parsed:
+                if not isinstance(entry, dict):
+                    continue
+                host = str(entry.get("host", "")).strip()
+                user = str(entry.get("user", "")).strip()
+                if not host or not user:
+                    continue
+                port = int(entry.get("port", 22) or 22)
+                aliases_raw = entry.get("aliases", [])
+                aliases = (
+                    [str(a).strip() for a in aliases_raw if str(a).strip()]
+                    if isinstance(aliases_raw, list) else []
+                )
+                servers.append({
+                    "name": str(entry.get("name", host)).strip() or host,
+                    "host": host,
+                    "user": user,
+                    "port": port,
+                    "aliases": aliases,
+                })
+            if servers:
+                return servers
     except json.JSONDecodeError:
-        return []
+        pass
+
+    # Legacy fallback: only when explicit single-host vars are configured
+    host = os.getenv("DOCKER_MONITOR_HOST", "").strip()
+    user = os.getenv("DOCKER_MONITOR_USER", "").strip()
+    if host and user:
+        port = int(os.getenv("DOCKER_MONITOR_PORT", "22"))
+        return [{"name": host, "host": host, "user": user, "port": port}]
+
+    return []
+
+
+def _match_server(s: Dict, key: str) -> bool:
+    """True wenn key den Server per Host, Name oder Alias (z. B. Public-IP) identifiziert."""
+    return s["host"] == key or s.get("name") == key or key in s.get("aliases", [])
 
 
 class SSHConnection:
@@ -106,7 +137,7 @@ async def list_containers(server: Optional[str] = Query(None, description="Serve
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:
@@ -158,7 +189,7 @@ async def get_container_stats(container_name: str, server: Optional[str] = Query
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:
@@ -196,7 +227,7 @@ async def get_container_logs(container_name: str, lines: int = 100, server: Opti
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:
@@ -232,7 +263,7 @@ async def restart_container(container_name: str, server: Optional[str] = Query(N
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:
@@ -267,7 +298,7 @@ async def stop_container(container_name: str, server: Optional[str] = Query(None
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:
@@ -302,7 +333,7 @@ async def start_container(container_name: str, server: Optional[str] = Query(Non
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:
@@ -337,7 +368,7 @@ async def get_system_info(server: Optional[str] = Query(None)):
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:
@@ -387,7 +418,7 @@ async def get_disk_analysis(server: Optional[str] = Query(None)):
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:
@@ -613,7 +644,7 @@ async def execute_cleanup(request: CleanupRequest, server: Optional[str] = Query
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:
@@ -663,7 +694,7 @@ async def get_system_metrics(server: Optional[str] = Query(None)):
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:
@@ -758,7 +789,7 @@ async def check_connection(server: Optional[str] = Query(None)):
     target = None
     if server:
         for s in servers:
-            if s["host"] == server or s.get("name") == server:
+            if _match_server(s, server):
                 target = s
                 break
     else:

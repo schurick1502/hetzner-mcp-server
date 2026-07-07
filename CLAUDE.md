@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MCP (Model Context Protocol) Server for Hetzner Cloud API with **117 tools** and a Web-UI. Enables Claude Desktop/Code to manage Hetzner Cloud resources directly.
+MCP (Model Context Protocol) Server for Hetzner Cloud API with **98 tools** and a Web-UI. Enables Claude Desktop/Code to manage Hetzner Cloud resources directly.
 
 ## Commands
 
@@ -45,7 +45,7 @@ Browser (React)      →  Nginx         →  FastAPI Backend     →  hetzner_mc
 
 | Path | Purpose |
 |------|---------|
-| `src/hetzner_mcp/server.py` | FastMCP server with 117 tool registrations |
+| `src/hetzner_mcp/server.py` | FastMCP server with 98 tool registrations |
 | `src/hetzner_mcp/config.py` | Configuration & hcloud API client singleton |
 | `src/hetzner_mcp/tools/` | Tool implementations by resource type |
 | `web/backend/` | FastAPI backend serving the same tools via REST |
@@ -53,13 +53,13 @@ Browser (React)      →  Nginx         →  FastAPI Backend     →  hetzner_mc
 
 ### Tool Modules (`src/hetzner_mcp/tools/`)
 
-- `servers.py` - Server lifecycle, rescue, metrics, snapshots (18 tools)
+- `servers.py` - Server lifecycle, rescue, metrics, snapshots (20 tools)
 - `load_balancers.py` - LB services, targets, algorithms (9 tools)
 - `firewalls.py` - Rules, server application (8 tools)
 - `volumes.py` - Attach, detach, resize (8 tools)
 - `networks.py` - Subnets, routes, server connections (12 tools)
 - `certificates.py` - SSL/TLS, Let's Encrypt managed (6 tools)
-- `misc.py` - Floating IPs, Primary IPs, SSH keys, Images (25+ tools)
+- `misc.py` - Floating IPs, Primary IPs, SSH keys, Images (29 tools)
 - `isos.py` - ISO management (2 tools)
 - `placement_groups.py` - Anti-affinity groups (4 tools)
 

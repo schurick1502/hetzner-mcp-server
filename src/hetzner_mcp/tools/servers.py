@@ -30,7 +30,7 @@ async def hcloud_server_list() -> dict:
                 "public_ipv4": server.public_net.ipv4.ip if server.public_net.ipv4 else None,
                 "public_ipv6": str(server.public_net.ipv6.ip) if server.public_net.ipv6 else None,
                 "server_type": server.server_type.name,
-                "location": server.datacenter.location.name,
+                "location": server.location.name if server.location else None,
                 "created": server.created.isoformat(),
             })
 
@@ -90,8 +90,8 @@ async def hcloud_server_info(identifier: str) -> dict:
                     "memory": server.server_type.memory,
                     "disk": server.server_type.disk,
                 },
-                "datacenter": server.datacenter.name,
-                "location": server.datacenter.location.name,
+                "datacenter": server.datacenter.name if server.datacenter else None,
+                "location": server.location.name if server.location else None,
                 "image": server.image.name if server.image else None,
                 "volumes": [vol.name for vol in server.volumes],
                 "created": server.created.isoformat(),
@@ -230,7 +230,7 @@ async def hcloud_server_create(
                 "public_ipv4": server.public_net.ipv4.ip if server.public_net.ipv4 else None,
                 "public_ipv6": str(server.public_net.ipv6.ip) if server.public_net.ipv6 else None,
                 "server_type": server.server_type.name,
-                "location": server.datacenter.location.name,
+                "location": server.location.name if server.location else None,
             },
             "action": {
                 "id": action.id,
