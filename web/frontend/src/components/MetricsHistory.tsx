@@ -269,14 +269,24 @@ export default function MetricsHistory() {
   })
 
   const servers = serversData?.data?.servers || []
-  const activeServer = selectedServer || (servers.length > 0 ? servers[0]?.name : '')
+
+  const serverOptions = servers.map((s: any) => ({
+    value: `${s.__account || ''}|${s.name}`,
+    name: s.name,
+    account: s.__account || null,
+  }))
+
+  const activeServerValue = selectedServer || (serverOptions.length > 0 ? serverOptions[0].value : '')
+  const activeServerOption = serverOptions.find((o: any) => o.value === activeServerValue)
+  const activeServer = activeServerOption?.name || ''
+  const activeAccount = activeServerOption?.account || undefined
 
   const metricType = metricTab === 'cpu' ? 'cpu' : metricTab === 'disk' ? 'disk' : 'network'
   const { start, end } = getTimeParams(timeRange)
 
   const { data: metricsData, isLoading: metricsLoading, isError } = useQuery({
-    queryKey: ['hetzner-metrics-history', activeServer, metricType, timeRange],
-    queryFn: () => metricsApi.getServerMetrics(activeServer, metricType, start, end),
+    queryKey: ['hetzner-metrics-history', activeServer, activeAccount, metricType, timeRange],
+    queryFn: () => metricsApi.getServerMetrics(activeServer, metricType, start, end, activeAccount),
     enabled: !!activeServer,
     refetchInterval: timeRange === '1h' ? 60000 : false,
   })
@@ -311,12 +321,14 @@ export default function MetricsHistory() {
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700">Server:</label>
             <select
-              value={activeServer}
+              value={activeServerValue}
               onChange={(e) => setSelectedServer(e.target.value)}
               className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-hetzner-blue"
             >
-              {servers.map((s: any) => (
-                <option key={s.id || s.name} value={s.name}>{s.name}</option>
+              {serverOptions.map((s: any) => (
+                <option key={s.value} value={s.value}>
+                  {s.name}{s.account ? ` (${String(s.account).toUpperCase()})` : ''}
+                </option>
               ))}
             </select>
           </div>

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { format } from 'date-fns'
+import { getHetznerAccountHeaders } from '../services/api'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001'
 
@@ -76,29 +77,29 @@ interface CleanupSuggestion {
 
 const hetznerApi = {
   listServers: async () => {
-    const res = await fetch(`${API_URL}/api/servers/`)
+    const res = await fetch(`${API_URL}/api/servers/`, { headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to fetch servers')
     return res.json()
   },
   getServer: async (name: string) => {
-    const res = await fetch(`${API_URL}/api/servers/${name}`)
+    const res = await fetch(`${API_URL}/api/servers/${name}`, { headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to fetch server')
     return res.json()
   },
   getSystemMetrics: async (host: string) => {
-    const res = await fetch(`${API_URL}/api/docker/system-metrics?server=${encodeURIComponent(host)}`)
+    const res = await fetch(`${API_URL}/api/docker/system-metrics?server=${encodeURIComponent(host)}`, { headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to fetch system metrics')
     return res.json()
   },
   getDiskAnalysis: async (host: string) => {
-    const res = await fetch(`${API_URL}/api/docker/disk-analysis?server=${encodeURIComponent(host)}`)
+    const res = await fetch(`${API_URL}/api/docker/disk-analysis?server=${encodeURIComponent(host)}`, { headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to fetch disk analysis')
     return res.json()
   },
   executeCleanup: async (command: string, host: string) => {
     const res = await fetch(`${API_URL}/api/docker/cleanup?server=${encodeURIComponent(host)}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getHetznerAccountHeaders() },
       body: JSON.stringify({ command })
     })
     if (!res.ok) throw new Error('Cleanup failed')

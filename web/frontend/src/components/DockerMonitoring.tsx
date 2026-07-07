@@ -5,6 +5,7 @@ import {
   AlertCircle, CheckCircle, FileText, ChevronDown, ChevronRight,
   Box, Layers, Cpu, Network
 } from 'lucide-react'
+import { getHetznerAccountHeaders } from '../services/api'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001'
 
@@ -50,56 +51,56 @@ interface ProjectGroup {
 
 const dockerApi = {
   listServers: async () => {
-    const res = await fetch(`${API_URL}/api/docker/servers`)
+    const res = await fetch(`${API_URL}/api/docker/servers`, { headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to fetch servers')
     return res.json()
   },
   listContainers: async (server?: string) => {
     const url = server ? `${API_URL}/api/docker/containers?server=${encodeURIComponent(server)}` : `${API_URL}/api/docker/containers`
-    const res = await fetch(url)
+    const res = await fetch(url, { headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to fetch containers')
     return res.json()
   },
   getStats: async (name: string, server?: string) => {
     const url = server ? `${API_URL}/api/docker/containers/${name}/stats?server=${encodeURIComponent(server)}` : `${API_URL}/api/docker/containers/${name}/stats`
-    const res = await fetch(url)
+    const res = await fetch(url, { headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to fetch stats')
     return res.json()
   },
   getLogs: async (name: string, lines: number = 50, server?: string) => {
     const params = new URLSearchParams({ lines: lines.toString() })
     if (server) params.append('server', server)
-    const res = await fetch(`${API_URL}/api/docker/containers/${name}/logs?${params}`)
+    const res = await fetch(`${API_URL}/api/docker/containers/${name}/logs?${params}`, { headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to fetch logs')
     return res.json()
   },
   startContainer: async (name: string, server?: string) => {
     const url = server ? `${API_URL}/api/docker/containers/${name}/start?server=${encodeURIComponent(server)}` : `${API_URL}/api/docker/containers/${name}/start`
-    const res = await fetch(url, { method: 'POST' })
+    const res = await fetch(url, { method: 'POST', headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to start container')
     return res.json()
   },
   stopContainer: async (name: string, server?: string) => {
     const url = server ? `${API_URL}/api/docker/containers/${name}/stop?server=${encodeURIComponent(server)}` : `${API_URL}/api/docker/containers/${name}/stop`
-    const res = await fetch(url, { method: 'POST' })
+    const res = await fetch(url, { method: 'POST', headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to stop container')
     return res.json()
   },
   restartContainer: async (name: string, server?: string) => {
     const url = server ? `${API_URL}/api/docker/containers/${name}/restart?server=${encodeURIComponent(server)}` : `${API_URL}/api/docker/containers/${name}/restart`
-    const res = await fetch(url, { method: 'POST' })
+    const res = await fetch(url, { method: 'POST', headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to restart container')
     return res.json()
   },
   getSystemInfo: async (server?: string) => {
     const url = server ? `${API_URL}/api/docker/system?server=${encodeURIComponent(server)}` : `${API_URL}/api/docker/system`
-    const res = await fetch(url)
+    const res = await fetch(url, { headers: getHetznerAccountHeaders() })
     if (!res.ok) throw new Error('Failed to fetch system info')
     return res.json()
   },
   checkHealth: async (server?: string) => {
     const url = server ? `${API_URL}/api/docker/health?server=${encodeURIComponent(server)}` : `${API_URL}/api/docker/health`
-    const res = await fetch(url)
+    const res = await fetch(url, { headers: getHetznerAccountHeaders() })
     return res.json()
   }
 }
