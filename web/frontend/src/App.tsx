@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Shield, Database, Network, Menu, LineChart, Terminal, Bot, Settings, ShieldCheck, DollarSign, Scale, Share2, MonitorSmartphone } from 'lucide-react'
 import SecurityPage from './pages/SecurityPage'
 import CostsPage from './pages/CostsPage'
@@ -13,8 +15,44 @@ import CliPage from './pages/CliPage'
 import AiAssistantPage from './pages/AiAssistantPage'
 import SettingsPage from './pages/SettingsPage'
 import SshTerminalPage from './pages/SshTerminalPage'
+import { miscApi, getActiveHetznerAccount, setActiveHetznerAccount } from './services/api'
+
+interface HetznerAccount {
+  id: string
+  label: string
+  is_default: boolean
+}
 
 function App() {
+  const queryClient = useQueryClient()
+  const [activeAccount, setActiveAccount] = useState<string>(getActiveHetznerAccount() || 'all')
+
+  const { data: accountsData } = useQuery({
+    queryKey: ['hetzner-accounts'],
+    queryFn: miscApi.accounts,
+  })
+
+  const accounts: HetznerAccount[] = accountsData?.data?.accounts || []
+  const defaultAccount: string | null = accountsData?.data?.default_account || null
+
+  useEffect(() => {
+    if (accounts.length === 0) return
+
+    const isValid = accounts.some(acc => acc.id === activeAccount)
+    if (isValid) return
+
+    const next = 'all'
+    setActiveAccount(next)
+    setActiveHetznerAccount(next)
+    queryClient.invalidateQueries()
+  }, [accounts, defaultAccount, activeAccount, queryClient])
+
+  const onAccountChange = (accountId: string) => {
+    setActiveAccount(accountId)
+    setActiveHetznerAccount(accountId)
+    queryClient.invalidateQueries()
+  }
+
   return (
     <BrowserRouter>
       <div className="min-h-screen flex">
@@ -45,6 +83,23 @@ function App() {
 
         {/* Main content */}
         <main className="flex-1 p-8 overflow-auto">
+          <div className="flex justify-end mb-4">
+            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+              <label className="text-sm text-gray-600">Account:</label>
+              <select
+                value={activeAccount}
+                onChange={(e) => onAccountChange(e.target.value)}
+                className="text-sm border rounded px-2 py-1 bg-white"
+              >
+                <option value="all">Alle Accounts</option>
+                {accounts.map((acc) => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/security" element={<SecurityPage />} />

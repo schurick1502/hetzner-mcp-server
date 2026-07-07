@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { getHetznerAccountHeaders } from '../services/api'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -21,7 +22,7 @@ export function useAiChat(provider: string) {
 
     fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getHetznerAccountHeaders() },
       body: JSON.stringify({
         provider,
         messages: allMessages
