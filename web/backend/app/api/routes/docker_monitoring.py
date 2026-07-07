@@ -81,7 +81,9 @@ class SSHConnection:
                     port=port,
                     username=user,
                     key_filename=SSH_KEY_PATH,
-                    timeout=10
+                    timeout=10,          # TCP-Connect
+                    banner_timeout=8,    # SSH-Banner-Austausch
+                    auth_timeout=8       # Fail-fast: nicht 30s auf hängende Auth warten
                 )
             else:
                 raise FileNotFoundError(f"SSH key not found: {SSH_KEY_PATH}")
