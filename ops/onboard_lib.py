@@ -1,9 +1,12 @@
 """Reine, testbare Onboarding-Logik (nur stdlib, kein Docker/SSH/Netz)."""
 from __future__ import annotations
 
+import argparse
 import json
+import os
 import re
 import shutil
+import sys
 from pathlib import Path
 
 SLUG_RE = re.compile(r"^[a-z0-9_]+$")
@@ -72,7 +75,8 @@ def update_env_file(env_path, slug, token, entry, allow_update=False) -> dict:
 
     if any(_is_assignment(l, token_key) for l in lines) and not allow_update:
         raise OnboardError(
-            f"{token_key} existiert bereits (--update zum Ueberschreiben)."
+            f"Umgebungsvariable fuer Slug '{slug}' existiert bereits "
+            "(--update zum Ueberschreiben)."
         )
 
     current_monitor = ""
@@ -102,3 +106,56 @@ def update_env_file(env_path, slug, token, entry, allow_update=False) -> dict:
 
     path.write_text("\n".join(out) + "\n", encoding="utf-8")
     return {"token_key": token_key, "monitor_json": monitor_json}
+
+
+def _read_monitor(env_path: str) -> str:
+    """Liest DOCKER_MONITOR_SERVERS aus .env."""
+    p = Path(env_path)
+    if not p.exists():
+        raise OnboardError(f".env nicht gefunden: {p}")
+    for l in p.read_text(encoding="utf-8").splitlines():
+        if _is_assignment(l, "DOCKER_MONITOR_SERVERS"):
+            return l.split("=", 1)[1]
+    return ""
+
+
+def _cli(argv=None) -> int:
+    """CLI-Einstiegspunkt für update-env Befehl."""
+    parser = argparse.ArgumentParser(prog="ops.onboard_lib")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    u = sub.add_parser("update-env")
+    u.add_argument("--env-file", default=".env")
+    u.add_argument("--slug", required=True)
+    u.add_argument("--host", required=True)
+    u.add_argument("--alias", default=None)
+    u.add_argument("--user", default="root")
+    u.add_argument("--port", default="22")
+    u.add_argument("--update", action="store_true")
+    u.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args(argv)
+
+    try:
+        slug = validate_slug(args.slug)
+        entry = build_entry(slug, args.host, alias=args.alias,
+                            user=args.user, port=args.port)
+        token = os.environ.get("ONBOARD_TOKEN", "")
+        if not token:
+            raise OnboardError("ONBOARD_TOKEN (Prozess-Env) ist leer.")
+        if args.dry_run:
+            preview = merge_monitor_servers(
+                _read_monitor(args.env_file), entry, allow_update=True)
+            print(f"[dry-run] HCLOUD_TOKEN_{slug.upper()}=*** (verborgen)")
+            print(f"[dry-run] DOCKER_MONITOR_SERVERS={preview}")
+            return 0
+        info = update_env_file(args.env_file, slug, token, entry,
+                               allow_update=args.update)
+        print(f"OK token_key={info['token_key']}")
+        print(f"OK DOCKER_MONITOR_SERVERS={info['monitor_json']}")
+        return 0
+    except OnboardError as e:
+        print(f"FEHLER: {e}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(_cli())
