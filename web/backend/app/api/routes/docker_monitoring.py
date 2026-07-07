@@ -2,6 +2,7 @@
 
 import os
 import json
+import asyncio
 from typing import Optional, List, Dict
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -102,7 +103,8 @@ async def list_monitored_servers():
     for server in servers:
         try:
             cmd = 'docker --version'
-            stdout, stderr, exit_code = SSHConnection.execute(
+            stdout, stderr, exit_code = await asyncio.to_thread(
+                SSHConnection.execute,
                 server["host"], server["user"], server.get("port", 22), cmd
             )
             result.append({
@@ -149,7 +151,8 @@ async def list_containers(server: Optional[str] = Query(None, description="Serve
     try:
         # Extended format with project label and networks
         cmd = """docker ps -a --format '{"id":"{{.ID}}","name":"{{.Names}}","image":"{{.Image}}","status":"{{.Status}}","state":"{{.State}}","ports":"{{.Ports}}","created":"{{.CreatedAt}}","project":"{{.Label "com.docker.compose.project"}}","networks":"{{.Networks}}"}'"""
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), cmd
         )
 
@@ -200,7 +203,8 @@ async def get_container_stats(container_name: str, server: Optional[str] = Query
 
     try:
         cmd = f'docker stats {container_name} --no-stream --format \'{{"cpu":"{{{{.CPUPerc}}}}","memory":"{{{{.MemUsage}}}}","mem_perc":"{{{{.MemPerc}}}}","net_io":"{{{{.NetIO}}}}","block_io":"{{{{.BlockIO}}}}"}}\''
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), cmd
         )
 
@@ -238,7 +242,8 @@ async def get_container_logs(container_name: str, lines: int = 100, server: Opti
 
     try:
         cmd = f'docker logs {container_name} --tail {lines} 2>&1'
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), cmd
         )
 
@@ -274,7 +279,8 @@ async def restart_container(container_name: str, server: Optional[str] = Query(N
 
     try:
         cmd = f'docker restart {container_name}'
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), cmd
         )
 
@@ -309,7 +315,8 @@ async def stop_container(container_name: str, server: Optional[str] = Query(None
 
     try:
         cmd = f'docker stop {container_name}'
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), cmd
         )
 
@@ -344,7 +351,8 @@ async def start_container(container_name: str, server: Optional[str] = Query(Non
 
     try:
         cmd = f'docker start {container_name}'
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), cmd
         )
 
@@ -379,7 +387,8 @@ async def get_system_info(server: Optional[str] = Query(None)):
 
     try:
         cmd = 'docker system df --format \'{"type":"{{.Type}}","total":"{{.TotalCount}}","active":"{{.Active}}","size":"{{.Size}}","reclaimable":"{{.Reclaimable}}"}\''
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), cmd
         )
 
@@ -395,7 +404,8 @@ async def get_system_info(server: Optional[str] = Query(None)):
                     continue
 
         version_cmd = 'docker version --format \'{"server":"{{.Server.Version}}","api":"{{.Server.APIVersion}}"}\''
-        version_stdout, _, _ = SSHConnection.execute(
+        version_stdout, _, _ = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), version_cmd
         )
         version = json.loads(version_stdout.strip()) if version_stdout.strip() else {}
@@ -457,7 +467,8 @@ docker images -f "dangling=true" --format "{{.ID}}\t{{.Size}}" 2>/dev/null | hea
 echo "=== APT_CACHE ==="
 du -sh /var/cache/apt/archives 2>/dev/null || echo "0"
 '''
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), cmd
         )
 
@@ -673,7 +684,8 @@ async def execute_cleanup(request: CleanupRequest, server: Optional[str] = Query
         raise HTTPException(status_code=403, detail=f"Command not in whitelist: {command}")
 
     try:
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), command
         )
 
@@ -714,7 +726,8 @@ echo "UPTIME:$(uptime -p | sed 's/up //')"
 echo "NETWORK:$(cat /proc/net/dev | grep eth0 | awk '{print $2, $10}')"
 echo "PROCESSES:$(ps aux | wc -l)"
 '''
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), cmd
         )
 
@@ -804,7 +817,8 @@ async def check_connection(server: Optional[str] = Query(None)):
 
     try:
         cmd = 'echo "ok" && docker --version'
-        stdout, stderr, exit_code = SSHConnection.execute(
+        stdout, stderr, exit_code = await asyncio.to_thread(
+            SSHConnection.execute,
             target["host"], target["user"], target.get("port", 22), cmd
         )
 
