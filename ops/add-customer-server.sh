@@ -44,6 +44,11 @@ done
 
 [ -n "$SLUG" ] && [ -n "$HOST" ] || { echo "FEHLER: --slug und --host sind Pflicht." >&2; usage; exit 1; }
 
+if ! printf '%s' "$SLUG" | grep -Eq '^[a-z0-9_]+$'; then
+  echo "FEHLER: Slug '$SLUG' ungueltig — nur [a-z0-9_], keine Bindestriche." >&2
+  exit 1
+fi
+
 dc() { (cd "$REPO_DIR" && docker compose "$@"); }
 
 # --- Token einlesen (nie echoen) ---
@@ -57,10 +62,13 @@ export ONBOARD_TOKEN
 echo "==> Vorab-Validierung (nichts wird geändert)…" >&2
 
 # 1) Cloud-API-Token im Backend-Container prüfen
-if ! dc exec -T -e ONBOARD_TMP="$ONBOARD_TOKEN" backend python -c '
+# ONBOARD_TOKEN ist bereits in der Shell exportiert; "-e ONBOARD_TOKEN" ohne
+# "=wert" leitet den Wert nur über die Umgebung weiter (nicht im argv des
+# Host-docker-Prozesses sichtbar, z. B. via ps/proc/<pid>/cmdline).
+if ! dc exec -T -e ONBOARD_TOKEN backend python -c '
 import os, sys
 from hcloud import Client
-srv = Client(token=os.environ["ONBOARD_TMP"]).servers.get_all()
+srv = Client(token=os.environ["ONBOARD_TOKEN"]).servers.get_all()
 print("   API OK:", len(srv), "Server:", [s.name for s in srv])
 ' >&2; then
   echo "FEHLER: Cloud-API-Token ungültig oder API nicht erreichbar. .env unverändert." >&2
@@ -68,13 +76,18 @@ print("   API OK:", len(srv), "Server:", [s.name for s in srv])
 fi
 
 # 2) SSH-Erreichbarkeit im Backend-Container prüfen (gemounteter hetzner_key)
-if ! dc exec -T backend python -c "
-import sys; sys.path.insert(0,'/app')
+# HOST/USER_NAME/PORT werden ausschließlich über die Umgebung übergeben und
+# im Python-Snippet aus os.environ gelesen — keine Interpolation in den
+# Quelltext, damit ein bösartiger --host keinen Code einschleusen kann.
+export OH_HOST="$HOST" OH_USER="$USER_NAME" OH_PORT="$PORT"
+if ! dc exec -T -e OH_HOST -e OH_USER -e OH_PORT backend python -c '
+import os, sys
+sys.path.insert(0, "/app")
 from app.api.routes.docker_monitoring import SSHConnection
-out, err, rc = SSHConnection.execute('$HOST', '$USER_NAME', $PORT, 'hostname')
-print('   SSH OK:', out.strip()) if rc == 0 else sys.stderr.write('SSH rc=%s %s\n' % (rc, err))
+out, err, rc = SSHConnection.execute(os.environ["OH_HOST"], os.environ["OH_USER"], int(os.environ["OH_PORT"]), "hostname")
+print("   SSH OK:", out.strip()) if rc == 0 else sys.stderr.write("SSH rc=%s %s\n" % (rc, err))
 sys.exit(0 if rc == 0 else 1)
-" >&2; then
+' >&2; then
   echo "FEHLER: SSH zu $USER_NAME@$HOST:$PORT fehlgeschlagen. .env unverändert." >&2
   exit 1
 fi
