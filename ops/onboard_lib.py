@@ -65,7 +65,8 @@ def _is_assignment(line: str, key: str) -> bool:
     return line.split("=", 1)[0].strip() == key
 
 
-def update_env_file(env_path, slug, token, entry, allow_update=False) -> dict:
+def update_env_file(env_path, slug, token, entry, allow_update=False,
+                    dry_run=False) -> dict:
     path = Path(env_path)
     if not path.exists():
         raise OnboardError(f".env nicht gefunden: {path}")
@@ -75,8 +76,7 @@ def update_env_file(env_path, slug, token, entry, allow_update=False) -> dict:
 
     if any(_is_assignment(l, token_key) for l in lines) and not allow_update:
         raise OnboardError(
-            f"Umgebungsvariable fuer Slug '{slug}' existiert bereits "
-            "(--update zum Ueberschreiben)."
+            f"{token_key} existiert bereits (--update zum Ueberschreiben)."
         )
 
     current_monitor = ""
@@ -85,6 +85,10 @@ def update_env_file(env_path, slug, token, entry, allow_update=False) -> dict:
             current_monitor = l.split("=", 1)[1]
             break
     monitor_json = merge_monitor_servers(current_monitor, entry, allow_update=allow_update)
+
+    if dry_run:
+        # Alle Pruefungen liefen bereits durch; es wird nichts geschrieben.
+        return {"token_key": token_key, "monitor_json": monitor_json}
 
     # Backup erst NACH erfolgreicher Validierung (kein halber Zustand)
     shutil.copy2(path, path.with_name(path.name + ".bak"))
@@ -136,16 +140,20 @@ def _cli(argv=None) -> int:
 
     try:
         slug = validate_slug(args.slug)
+        try:
+            int(args.port)
+        except ValueError:
+            raise OnboardError(f"Ungueltiger Port '{args.port}'.")
         entry = build_entry(slug, args.host, alias=args.alias,
                             user=args.user, port=args.port)
         token = os.environ.get("ONBOARD_TOKEN", "")
         if not token:
             raise OnboardError("ONBOARD_TOKEN (Prozess-Env) ist leer.")
         if args.dry_run:
-            preview = merge_monitor_servers(
-                _read_monitor(args.env_file), entry, allow_update=True)
-            print(f"[dry-run] HCLOUD_TOKEN_{slug.upper()}=*** (verborgen)")
-            print(f"[dry-run] DOCKER_MONITOR_SERVERS={preview}")
+            info = update_env_file(args.env_file, slug, token, entry,
+                                   allow_update=args.update, dry_run=True)
+            print(f"[dry-run] {info['token_key']}=*** (verborgen)")
+            print(f"[dry-run] DOCKER_MONITOR_SERVERS={info['monitor_json']}")
             return 0
         info = update_env_file(args.env_file, slug, token, entry,
                                allow_update=args.update)
