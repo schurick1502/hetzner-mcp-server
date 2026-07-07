@@ -46,3 +46,12 @@ htmlcov/
 
 # Logs
 *.log
+
+# JARVIS Mode Scaffolding (lokales Tool-Geruest, nicht versioniert)
+ops/ACTIVE_CONTEXT.md
+ops/GUARDS.yml
+ops/JARVIS_LOG.md
+ops/RUNBOOK.md
+
+# Alerting-Runtime-Zustand (wird zur Laufzeit von alerting.py geschrieben)
+web/backend/app/alerting_config.json

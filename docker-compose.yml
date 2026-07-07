@@ -15,10 +15,7 @@ services:
       - GEMINI_API_KEY
       - DEFAULT_AI_PROVIDER
       - DEFAULT_AI_MODEL
-      - DOCKER_MONITOR_HOST=${DOCKER_MONITOR_HOST:-46.225.53.7}
-      - DOCKER_MONITOR_USER=${DOCKER_MONITOR_USER:-root}
       - DOCKER_MONITOR_KEY=/root/.ssh/hetzner_key
-      - DOCKER_MONITOR_PORT=${DOCKER_MONITOR_PORT:-22}
       - DOCKER_MONITOR_SERVERS
     volumes:
       - ./web/backend/app:/app/app
@@ -35,7 +32,7 @@ services:
       dockerfile: Dockerfile
       target: build
     ports:
-      - "5173:5173"
+      - "8502:5173"
     volumes:
       - ./web/frontend:/app
       - /app/node_modules

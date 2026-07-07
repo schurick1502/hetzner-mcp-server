@@ -45,7 +45,7 @@ function SettingsGroup({ groupKey, group, onSave }: {
     setTimeout(() => setSaved(false), 3000)
   }
 
-  const hasChanges = Object.values(values).some(v => v !== '')
+  const hasChanges = Object.keys(values).length > 0
 
   return (
     <div className="card">
@@ -68,13 +68,23 @@ function SettingsGroup({ groupKey, group, onSave }: {
             </label>
             <div className="flex gap-2">
               <div className="flex-1 relative">
-                <input
-                  type={meta.is_secret && !showSecrets[key] ? 'password' : 'text'}
-                  value={values[key] ?? ''}
-                  onChange={e => handleChange(key, e.target.value)}
-                  placeholder={meta.is_secret ? (meta.has_value ? 'Neuen Wert eingeben zum Ändern' : 'Wert eingeben') : meta.value || 'Wert eingeben'}
-                  className="w-full border rounded px-3 py-2 text-sm font-mono pr-10"
-                />
+                {key === 'DOCKER_MONITOR_SERVERS' ? (
+                  <textarea
+                    value={values[key] ?? meta.value ?? ''}
+                    onChange={e => handleChange(key, e.target.value)}
+                    placeholder='[{"name":"Server 1","host":"1.2.3.4","user":"root","port":22}]'
+                    className="w-full border rounded px-3 py-2 text-sm font-mono"
+                    rows={4}
+                  />
+                ) : (
+                  <input
+                    type={meta.is_secret && !showSecrets[key] ? 'password' : 'text'}
+                    value={values[key] ?? ''}
+                    onChange={e => handleChange(key, e.target.value)}
+                    placeholder={meta.is_secret ? (meta.has_value ? 'Neuen Wert eingeben zum Ändern' : 'Wert eingeben') : meta.value || 'Wert eingeben'}
+                    className="w-full border rounded px-3 py-2 text-sm font-mono pr-10"
+                  />
+                )}
                 {meta.is_secret && (
                   <button
                     type="button"
@@ -86,6 +96,11 @@ function SettingsGroup({ groupKey, group, onSave }: {
                 )}
               </div>
             </div>
+            {key === 'DOCKER_MONITOR_SERVERS' && (
+              <p className="text-xs text-gray-500 mt-1">
+                Mehrere Hosts als JSON-Array, z.B. <code className="bg-gray-100 px-1 rounded">{`[{"name":"Main","host":"46.225.53.7","user":"root","port":22},{"name":"Backup","host":"1.2.3.4","user":"root","port":22}]`}</code>
+              </p>
+            )}
             {meta.is_secret && meta.has_value && (
               <p className="text-xs text-gray-400 mt-1 font-mono">{meta.value}</p>
             )}
