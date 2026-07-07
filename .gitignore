@@ -55,3 +55,7 @@ ops/RUNBOOK.md
 
 # Alerting-Runtime-Zustand (wird zur Laufzeit von alerting.py geschrieben)
 web/backend/app/alerting_config.json
+
+# Session-Artefakte (Screenshots, MCP-Playwright-Cache)
+/*.png
+.playwright-mcp/
