@@ -13,8 +13,19 @@ from src.hetzner_mcp.tools.misc import (
     hcloud_location_list,
     hcloud_datacenter_list,
 )
+from src.hetzner_mcp.config import get_available_accounts, get_default_account_id
 
 router = APIRouter()
+
+
+@router.get("/accounts")
+async def list_accounts():
+    """Liste aller konfigurierten Hetzner Accounts."""
+    return {
+        "success": True,
+        "accounts": get_available_accounts(),
+        "default_account": get_default_account_id(),
+    }
 
 
 @router.get("/ssh-keys")
