@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Terminal, Plug, PlugZap, Server } from 'lucide-react'
-import { serversApi } from '../services/api'
+import { serversApi, dockerApi } from '../services/api'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8501'
 
@@ -24,7 +24,32 @@ export default function SshTerminalPage() {
     queryFn: serversApi.list,
   })
 
-  const servers = serversData?.data?.servers || []
+  const { data: dockerServersData } = useQuery({
+    queryKey: ['dockerServers'],
+    queryFn: dockerApi.servers,
+  })
+
+  const hetznerServers = serversData?.data?.servers || []
+  const dockerServers = dockerServersData?.data?.servers || []
+
+  const serverOptions = [
+    ...hetznerServers
+      .filter((s: any) => s.public_ipv4 && s.status === 'running')
+      .map((s: any) => ({
+        key: `hcloud-${s.id || s.name}`,
+        ip: s.public_ipv4,
+        label: `${s.name} (${s.public_ipv4}) - ${s.status}`,
+      })),
+    ...dockerServers
+      .filter((s: any) => s.host)
+      .map((s: any) => ({
+        key: `docker-${s.host}`,
+        ip: s.host,
+        label: `${s.name} (${s.host}) - Docker ${s.status}`,
+      })),
+  ].filter((option: any, index: number, arr: any[]) =>
+    arr.findIndex((x: any) => x.ip === option.ip) === index
+  )
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {
@@ -166,13 +191,13 @@ export default function SshTerminalPage() {
 
   // Auto-select first server
   useEffect(() => {
-    if (servers.length > 0 && !selectedIp) {
-      const first = servers.find((s: any) => s.public_ipv4 && s.status === 'running')
+    if (serverOptions.length > 0 && !selectedIp) {
+      const first = serverOptions[0]
       if (first) {
-        setSelectedIp(first.public_ipv4)
+        setSelectedIp(first.ip)
       }
     }
-  }, [servers, selectedIp])
+  }, [serverOptions, selectedIp])
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col">
@@ -196,13 +221,12 @@ export default function SshTerminalPage() {
             disabled={connecting}
           >
             <option value="">Server wählen...</option>
-            {servers.map((s: any) => (
+            {serverOptions.map((s: any) => (
               <option
-                key={s.id || s.name}
-                value={s.public_ipv4}
-                disabled={!s.public_ipv4 || s.status !== 'running'}
+                key={s.key}
+                value={s.ip}
               >
-                {s.name} ({s.public_ipv4 || 'keine IP'}) - {s.status}
+                {s.label}
               </option>
             ))}
           </select>
