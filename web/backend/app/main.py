@@ -1,9 +1,10 @@
 """FastAPI Backend für Hetzner Cloud MCP Web UI."""
 
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from src.hetzner_mcp.config import set_active_account, reset_active_account
 
 from .api.routes import servers, firewalls, volumes, networks, load_balancers, misc, cli, ai, docker_monitoring, settings, security_audit, costs, health_checks, topology, bulk, snapshot_scheduler, alerting, dns, ssh_terminal
 
@@ -27,6 +28,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def set_account_context(request: Request, call_next):
+    """Set active Hetzner account per request via header or query."""
+    requested_account = request.headers.get("X-Hetzner-Account") or request.query_params.get("account")
+    try:
+        token = set_active_account(requested_account)
+    except ValueError:
+        # Fallback to default account if client sends stale/invalid account id.
+        token = set_active_account(None)
+
+    try:
+        return await call_next(request)
+    finally:
+        reset_active_account(token)
 
 # Include routers
 app.include_router(servers.router, prefix="/api/servers", tags=["Servers"])

@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import os
+import json
 from pathlib import Path
 
 router = APIRouter()
@@ -22,6 +23,8 @@ SETTING_GROUPS = {
         "label": "Hetzner Cloud",
         "settings": {
             "HCLOUD_TOKEN": {"label": "API Token", "secret": True},
+            "HCLOUD_TOKEN_OM": {"label": "API Token (OM)", "secret": True},
+            "HCLOUD_DEFAULT_ACCOUNT": {"label": "Standard Account", "secret": False},
         },
     },
     "ai": {
@@ -37,10 +40,42 @@ SETTING_GROUPS = {
     "docker": {
         "label": "Docker Monitoring",
         "settings": {
-            "DOCKER_MONITOR_SERVERS": {"label": "Server (JSON)", "secret": False},
+            "DOCKER_MONITOR_SERVERS": {"label": "Server-Liste (JSON)", "secret": False},
         },
     },
 }
+
+
+def _validate_docker_servers(value: str) -> None:
+    """Validate DOCKER_MONITOR_SERVERS JSON format."""
+    if not value:
+        return
+
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"DOCKER_MONITOR_SERVERS ist kein gueltiges JSON: {exc.msg}",
+        ) from exc
+
+    if not isinstance(parsed, list):
+        raise HTTPException(
+            status_code=400,
+            detail="DOCKER_MONITOR_SERVERS muss ein JSON-Array sein.",
+        )
+
+    for idx, entry in enumerate(parsed, start=1):
+        if not isinstance(entry, dict):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Server-Eintrag {idx} muss ein Objekt sein.",
+            )
+        if not entry.get("host") or not entry.get("user"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Server-Eintrag {idx} braucht mindestens 'host' und 'user'.",
+            )
 
 
 def _read_env_values() -> dict[str, str]:
@@ -167,6 +202,8 @@ async def update_settings(request: SettingsUpdateRequest):
         )
         if is_secret and not value:
             continue
+        if key == "DOCKER_MONITOR_SERVERS":
+            _validate_docker_servers(value)
         updates[key] = value
 
     if updates:
