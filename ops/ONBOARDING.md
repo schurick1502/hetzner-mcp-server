@@ -18,6 +18,13 @@ bash ops/add-customer-server.sh --slug acme --host 100.100.0.5 --alias 203.0.113
 Der Token wird versteckt abgefragt. `--dry-run` zeigt die geplante Änderung ohne Schreiben.
 `--update` überschreibt einen bestehenden Slug.
 
+Nicht-interaktiv (z. B. CI): den Token stattdessen über die Umgebungsvariable
+`ONBOARD_TOKEN` setzen — dann entfällt der Prompt. Der Wert darf nie als CLI-Argument
+übergeben werden:
+```bash
+ONBOARD_TOKEN="<token>" bash ops/add-customer-server.sh --slug acme --host 203.0.113.10
+```
+
 ## Slug-Regel
 Nur `[a-z0-9_]`, **keine Bindestriche** — wird Env-Var-Name `HCLOUD_TOKEN_<SLUG>`
 (daher z. B. `ehmen`, nicht `tsv-ehmen`).
